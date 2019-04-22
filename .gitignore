@@ -1,2 +1,5 @@
 data/
 
+# Ignore secrets files located in configs directory
+configs/*
+
