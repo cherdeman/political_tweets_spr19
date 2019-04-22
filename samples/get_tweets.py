@@ -38,6 +38,8 @@ def get_tweets(api, input_file, output_file)
                     writer.writerow(row)
 
 def main():
+    print("The input file is: ", sys.argv[1])
+    print("The output file is: ", sys.argv[1])
     api = get_credentials()
     get_tweets(api, sys.argv[1], sys.argv[2])
 
