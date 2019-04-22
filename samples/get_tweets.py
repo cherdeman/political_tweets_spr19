@@ -17,9 +17,9 @@ def get_credentials(secrets_file = '../configs/secrets.json'):
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 
-    api = tweepy.API(auth)
+    return tweepy.API(auth)
 
-def get_tweets(api, input_file, output_file)
+def get_tweets(api, input_file, output_file):
     with open(output_file,'w') as f:
         writer = csv.writer(f, delimiter= ',')
         writer.writerow(['id', 'created_at', 'text', 'user_id', 'retweets', 'favorites'])
@@ -39,9 +39,9 @@ def get_tweets(api, input_file, output_file)
 
 def main():
     print("The input file is: ", sys.argv[1])
-    print("The output file is: ", sys.argv[1])
+    print("The output file is: ", sys.argv[2])
     api = get_credentials()
     get_tweets(api, sys.argv[1], sys.argv[2])
 
-def __name__ == '__main__':
-    mean()
+if __name__ == '__main__':
+    main()
