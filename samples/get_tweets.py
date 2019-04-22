@@ -1,3 +1,4 @@
+import time
 import sys
 import tweepy
 import json
@@ -27,8 +28,10 @@ def get_tweets(api, input_file, output_file):
         reader = pd.read_csv(input_file, sep = '\n', header=None, names=['id'], chunksize = 100)
         for chunk in reader:
             try:
+                print("You're rollin, bb")
                 tweets = api.statuses_lookup(list(chunk['id']), include_entities=True, trim_user=True, tweet_mode='extended')
             except tweepy.RateLimitError:
+                print("You've bne LIMITED, give it 15.")
                 time.sleep(15 * 60)
                 tweets = api.statuses_lookup(list(chunk['id']), include_entities=True, trim_user=True, tweet_mode='extended')
             for status in tweets:
