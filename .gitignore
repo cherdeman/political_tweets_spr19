@@ -3,3 +3,9 @@ data/
 # Ignore secrets files located in configs directory
 configs/*
 
+# Ignore notebook checkpoints
+.ipynb_checkpoints/
+
+# virtualenvironment
+sprml/
+
