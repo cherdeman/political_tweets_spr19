@@ -34,6 +34,11 @@ def get_tweets(api, input_file, output_file):
                 time.sleep(15 * 60)
                 print("You're starting up again!")
                 tweets = api.statuses_lookup(list(chunk['id']), include_entities=True, trim_user=True, tweet_mode='extended')
+            except tweepy.TweepError as e:
+                if 'Failed to send request:' in e.reason:
+                    print("Time out error caught.")
+                    time.sleep(180)
+                    continue
             for status in tweets:
                 if not hasattr(status, 'retweeted_status'):
                     row = [status.id_str, status.created_at, status.full_text, status.user.id_str, 
