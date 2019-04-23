@@ -1,4 +1,6 @@
-data/
+# Don't commit GWs large data files
+data/partisan_data
+data/GWdata
 
 # Ignore secrets files located in configs directory
 configs/*
