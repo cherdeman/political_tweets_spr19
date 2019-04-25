@@ -47,6 +47,10 @@ def main():
 
     for table, file in tables.items():
         full_table_name = "raw." + table
+
+        print(f"Creating raw schema if needed...")
+        cur.execute(create_schema)
+
         print(F"Dropping and recreating table {full_table_name}")
         cur.execute(drop.format(full_table_name))
         cur.execute(create_table.format(full_table_name))
@@ -54,7 +58,6 @@ def main():
         print(f"Copying from {file} into {full_table_name}")
         with open('../data/tweets/{}'.format(file), 'r') as t:
             next(t)
-            #cur.copy_from(t, full_table_name)
             cur.copy_expert(copy.format(full_table_name), file=t)
 
     print("Done!")
