@@ -2,7 +2,7 @@ import json
 import psycopg2
 
 def connect():
-    with open('../configs/db_config.json') as f:
+    with open('../../configs/db_config.json') as f:
         config = json.load(f)
         host=config["host"]
         username=config["user"]
