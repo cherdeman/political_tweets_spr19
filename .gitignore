@@ -1,6 +1,8 @@
-# Don't commit GWs large data files
+# Don't commit large data files
 data/partisan_data
 data/GWdata
+data/tweets/house_attempts/
+data/tweets/house_tweets.csv
 
 # Ignore secrets files located in configs directory
 configs/*
