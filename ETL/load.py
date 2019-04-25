@@ -41,24 +41,40 @@ copy = """
        from STDIN delimiter ',' CSV HEADER;
        """
 
+####### FUNCTIONS #######
+
+def create_raw_schema(cur):
+    print(f"Creating raw schema if needed...")
+    cur.execute(create_schema)
+
+def drop_and_recreate_table(cur, full_table_name):
+    print(F"Dropping and recreating table {full_table_name}")
+    cur.execute(drop.format(full_table_name))
+    cur.execute(create_table.format(full_table_name))
+
+def copy_file_to_table(cur, file, full_table_name):
+    print(f"Copying from {file} into {full_table_name}")
+    with open('../data/tweets/{}'.format(file), 'r') as t:
+        next(t)
+        cur.copy_expert(copy.format(full_table_name), file=t)
+        t.close()
+
+
 def main():
     conn = connect()
     cur = conn.cursor()
 
+    create_raw_schema(cur)
+    conn.commit()
+
     for table, file in tables.items():
         full_table_name = "raw." + table
 
-        print(f"Creating raw schema if needed...")
-        cur.execute(create_schema)
+        drop_and_recreate_table(cur, full_table_name)
+        conn.commit()
 
-        print(F"Dropping and recreating table {full_table_name}")
-        cur.execute(drop.format(full_table_name))
-        cur.execute(create_table.format(full_table_name))
-
-        print(f"Copying from {file} into {full_table_name}")
-        with open('../data/tweets/{}'.format(file), 'r') as t:
-            next(t)
-            cur.copy_expert(copy.format(full_table_name), file=t)
+        copy_file_to_table(cur, file, full_table_name)
+        conn.commit()
 
     print("Done!")
 
