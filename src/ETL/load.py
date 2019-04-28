@@ -4,10 +4,12 @@ import sys
 sys.path.append("..")
 from utils import db_client
 
-tables = {"senate":"senate_tweets.csv",
-          "house":"house_tweets.csv",
-          "democrat":"dem_tweets.csv",
-          "republican":"rep_tweets.csv" }
+tables = {"senate":["tweets","senate_tweets.csv"],
+          "house": ["tweets","house_tweets.csv"],
+          "democrat":["tweets","dem_tweets.csv"],
+          "republican":["tweets","rep_tweets.csv"],
+          "house_accounts": ["lookups","house-accounts.csv"],
+          "senate_accounts": ["lookups","senate-accounts.csv"]}
 
 ####### QUERIES ######
 
@@ -15,19 +17,30 @@ create_schema = "create schema if not exists raw"
 
 drop = "drop table if exists {};"
 
-create_table = """
-               create table {} (
+create_table = "create table {} ({});"
+
+tweet_columns = """
                   tweet_id varchar(20) NOT NULL,
                   tweet_date date,
                   tweet_text text,
                   user_id varchar(20) NOT NULL,
                   retweet_count int,
                   favorite_count int
-                  );
-               """
+                """
+
+accounts_columns = """
+                    token varchar(20),
+                    user_id varchar(20),
+                    link varchar(50),
+                    party_affiliation varchar(5),
+                    primary key (user_id)
+                   """
+
+tweet_col_names = "tweet_id, tweet_date, tweet_text, user_id, retweet_count, favorite_count"
+account_col_names = "token, user_id, link"#, party_affiliation"
 
 copy = """
-       copy {}(tweet_id, tweet_date, tweet_text, user_id, retweet_count, favorite_count) 
+       copy {}({}) 
        from STDIN delimiter ',' CSV HEADER;
        """
 
@@ -38,17 +51,26 @@ def main():
     print(f"Creating raw schema if needed...")
     db.write([create_schema])
 
-    for table, file in tables.items():
+    for table, file_list in tables.items():
+      filedir = file_list[0]
+      filename = file_list[1]
       full_table_name = "raw." + table
 
-      print(F"Dropping and recreating table {full_table_name}")
-      db.write([drop.format(full_table_name), create_table.format(full_table_name)])
-      #db.write(create_table.format(full_table_name))
+      #prepare statemnts
+      if filedir == "tweets":
+        create_statement = create_table.format(full_table_name, tweet_columns)
+        copy_statement = copy.format(full_table_name, tweet_col_names)
+      else:
+        create_statement = create_table.format(full_table_name, accounts_columns)
+        copy_statement = copy.format(full_table_name, account_col_names)
 
-      print(f"Copying from {file} into {full_table_name}")
-      csv_path = f"../../data/tweets/{file}"
-      sql = copy.format(full_table_name)
-      db.copy(csv_path, sql)
+      print(f"Dropping and recreating table {full_table_name}")
+      db.write([drop.format(full_table_name), create_statement])
+
+      print(f"Copying from {filename} into {full_table_name}")
+      csv_path = f"../../data/{filedir}/{filename}"
+      
+      db.copy(csv_path, copy_statement)
 
 
 if __name__ == "__main__":
