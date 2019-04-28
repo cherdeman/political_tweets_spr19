@@ -6,11 +6,11 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import wordnet
 from nltk.util import ngrams
 from gensim.utils import simple_preprocess
-
+import re
 
 
 class DataClean():
-    def __init__(self, table_name, cleaned_tweet_field = 'tweet_text_clean'):
+    def __init__(self, cleaned_tweet_field = 'tweet_text_clean'):
         """[summary]
         
         :param table_name: [description]
@@ -18,13 +18,7 @@ class DataClean():
         :param cleaned_tweet_field: [description]
         :type cleaned_tweet_field: [type]
         """
-        self.table_name = table_name
         self.tweet_field = cleaned_tweet_field
-
-    # how to deal w/ URL? - remove!
-    # convert everything to lower case? - yes!
-    # remove emoji
-    # 
 
     def rem_punctuation(self, chunk):
         tweet_text = self.tweet_field
@@ -37,11 +31,17 @@ class DataClean():
         chunk[tweet_text] = chunk[tweet_text].str.translate(translator)
 
         return chunk 
+        
+
+    def rem_url(self, chunk):
+        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: re.sub(r"http\S+", "", x))
+
+        return chunk
 
     def tokenize(self, chunk):
         # do we want to remove handles?
         tknzr = TweetTokenizer(preserve_case = False)
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: tknzer.tokenize(x)))
+        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: tknzr.tokenize(x))
         
         return chunk
 
@@ -66,8 +66,10 @@ class DataClean():
 
         return chunk
 
-    def remove_stop_words(self, chunk):
+    def remove_stop_words_len_one(self, chunk):
         stop_words = set(stopwords.words('english'))
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: [i for i in x if i not in stop_words] )
+        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: [i for i in x if i not in stop_words and len(i) > 1] )
         
         return chunk
+
+    
