@@ -1,8 +1,4 @@
-# script to load tweet data files into database
-
-import sys
-sys.path.append("..")
-from utils import db_client
+# queries to load tweet data files into database
 
 tables = {"senate":["tweets","senate_tweets.csv"],
           "house": ["tweets","house_tweets.csv"],
@@ -43,39 +39,6 @@ copy = """
        copy {}({}) 
        from STDIN delimiter ',' CSV HEADER;
        """
-
-
-def main():
-    db = db_client.DBClient()
-
-    print(f"Creating raw schema if needed...")
-    db.write([create_schema])
-
-    for table, file_list in tables.items():
-      filedir = file_list[0]
-      filename = file_list[1]
-      full_table_name = "raw." + table
-
-      #prepare statemnts
-      if filedir == "tweets":
-        create_statement = create_table.format(full_table_name, tweet_columns)
-        copy_statement = copy.format(full_table_name, tweet_col_names)
-      else:
-        create_statement = create_table.format(full_table_name, accounts_columns)
-        copy_statement = copy.format(full_table_name, account_col_names)
-
-      print(f"Dropping and recreating table {full_table_name}")
-      db.write([drop.format(full_table_name), create_statement])
-
-      print(f"Copying from {filename} into {full_table_name}")
-      csv_path = f"../../data/{filedir}/{filename}"
-      
-      db.copy(csv_path, copy_statement)
-
-
-if __name__ == "__main__":
-    main()
-
 
 
 
