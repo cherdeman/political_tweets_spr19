@@ -13,3 +13,7 @@ configs/*
 # virtualenvironment
 sprml/
 
+# Ignore annoying files
+*.icloud
+*.DS_Store
+*__pycache__/
