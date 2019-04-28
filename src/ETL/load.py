@@ -1,18 +1,8 @@
-import json
-import psycopg2
+# script to load tweet data files into database
 
-def connect():
-    with open('../../configs/db_config.json') as f:
-        config = json.load(f)
-        host=config["host"]
-        username=config["user"]
-        database=config["db"]
-        password=config["pass"]
-        port=config["port"]
-        
-        return psycopg2.connect(database=database, user=username,
-                                password=password, host=host, port=port)
-
+import sys
+sys.path.append("..")
+from utils import db_client
 
 tables = {"senate":"senate_tweets.csv",
           "house":"house_tweets.csv",
@@ -41,42 +31,24 @@ copy = """
        from STDIN delimiter ',' CSV HEADER;
        """
 
-####### FUNCTIONS #######
-
-def create_raw_schema(cur):
-    print(f"Creating raw schema if needed...")
-    cur.execute(create_schema)
-
-def drop_and_recreate_table(cur, full_table_name):
-    print(F"Dropping and recreating table {full_table_name}")
-    cur.execute(drop.format(full_table_name))
-    cur.execute(create_table.format(full_table_name))
-
-def copy_file_to_table(cur, file, full_table_name):
-    print(f"Copying from {file} into {full_table_name}")
-    with open('../data/tweets/{}'.format(file), 'r') as t:
-        next(t)
-        cur.copy_expert(copy.format(full_table_name), file=t)
-        t.close()
-
 
 def main():
-    conn = connect()
-    cur = conn.cursor()
+    db = db_client.DBClient()
 
-    create_raw_schema(cur)
-    conn.commit()
+    print(f"Creating raw schema if needed...")
+    db.write([create_schema])
 
     for table, file in tables.items():
-        full_table_name = "raw." + table
+      full_table_name = "raw." + table
 
-        drop_and_recreate_table(cur, full_table_name)
-        conn.commit()
+      print(F"Dropping and recreating table {full_table_name}")
+      db.write([drop.format(full_table_name), create_table.format(full_table_name)])
+      #db.write(create_table.format(full_table_name))
 
-        copy_file_to_table(cur, file, full_table_name)
-        conn.commit()
-
-    print("Done!")
+      print(f"Copying from {file} into {full_table_name}")
+      csv_path = f"../../data/tweets/{file}"
+      sql = copy.format(full_table_name)
+      db.copy(csv_path, sql)
 
 
 if __name__ == "__main__":
