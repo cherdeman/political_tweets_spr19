@@ -9,8 +9,9 @@ from gensim.utils import simple_preprocess
 import re
 
 
+
 class DataClean():
-    def __init__(self, cleaned_tweet_field = 'tweet_text_clean'):
+    def __init__(self, select_hash, cleaned_tweet_field = 'tweet_text_clean'):
         """[summary]
         
         :param table_name: [description]
@@ -19,31 +20,33 @@ class DataClean():
         :type cleaned_tweet_field: [type]
         """
         self.tweet_field = cleaned_tweet_field
+        self.select_hash = select_hash
 
-    def rem_punctuation(self, chunk):
-        tweet_text = self.tweet_field
+    def rem_punctuation(self, tweet):
         # remove hashtag from punctuation because we wish to preserve
         punctuation = string.punctuation.replace('#', "")
         punctuation = punctuation.replace('@', "")
         punctuation += '’'
-        print(punctuation)
+      
         translator = str.maketrans('','', punctuation)
-        chunk[tweet_text] = chunk[tweet_text].str.translate(translator)
+        tweet = tweet.translate(translator)
 
-        return chunk 
+        return tweet
         
 
-    def rem_url(self, chunk):
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: re.sub(r"http\S+", "", x))
+    def rem_url(self, tweet):
+        tweet = re.sub(r"http\S+", "", tweet)
 
-        return chunk
+        return tweet
 
-    def tokenize(self, chunk):
-        # do we want to remove handles?
-        tknzr = TweetTokenizer(preserve_case = False)
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: tknzr.tokenize(x))
+    def tokenize(self, tweet, strip_handles):
+        if strip_handles:
+            tknzr = TweetTokenizer(preserve_case = False, strip_handles=True)
+        else: 
+            tknzr = TweetTokenizer(preserve_case = False)
+        tweet = tknzr.tokenize(tweet)
         
-        return chunk
+        return tweet
 
     def get_wordnet_pos(self, tag):
 
@@ -58,18 +61,46 @@ class DataClean():
         else:
             return wordnet.NOUN
 
-    def lemmatize(self, chunk):
+    def pos_tag(self, tokenized_tweet):
+        tweet = nltk.pos_tag(tokenized_tweet)
+
+        return tweet
+
+    def lemmatize(self, tagged_tweet):
         lmtzr = WordNetLemmatizer()
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: nltk.pos_tag(x))
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: [lmtzr.lemmatize(i[0], 
-        self.get_wordnet_pos(i[1])) for i in x if len(i[0]) > 0])
+        tweet = [lmtzr.lemmatize(i[0], self.get_wordnet_pos(i[1])) for i in tagged_tweet if len(i[0]) > 0]
 
-        return chunk
+        return tweet
 
-    def remove_stop_words_len_one(self, chunk):
+    def remove_stop_words_len_one(self, tweet):
         stop_words = set(stopwords.words('english'))
-        chunk[self.tweet_field] = chunk[self.tweet_field].apply(lambda x: [i for i in x if i not in stop_words and len(i) > 1] )
+        # amp is encoded for & 
+        stop_words.add('amp')
+        tweet = [i for i in tweet if i not in stop_words and len(i) > 1] 
         
-        return chunk
+        return tweet
+
+    def rem_hashtag(self, tweet, rem_hashtag):
+        if rem_hashtag == "all":
+            tweet = [i for i in tweet if not i.startswith("#")]
+        elif rem_hashtag == "select":
+            tweet = [i for i in tweet if i not in self.select_hash]
+        
+        return tweet
+
+    def pre_process(self, tweet, strip_handles, rem_hashtag):
+        tweet = self.rem_punctuation(tweet)
+        tweet = self.rem_url(tweet)
+        tweet = self.tokenize(tweet, strip_handles)
+        tweet = self.rem_hashtag(tweet, rem_hashtag)
+        if len(tweet) > 0:
+            tweet = self.pos_tag(tweet)
+            tweet = self.lemmatize(tweet)
+            tweet = self.remove_stop_words_len_one(tweet)
+            return tweet
+        else:
+            return []
+        
+
 
     
