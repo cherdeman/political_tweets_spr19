@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 class DBClient():
 
-    def __init__(self, if_local_connection = True, secrets_path = '../configs/db_secrets.json', 
+    def __init__(self, if_local_connection = True, secrets_path = '../../configs/db_secrets.json', 
                  schema_name = None, db_name = "politicaltweets"):
         """
         Class for maintaining the database client object, with attributes and 
