@@ -113,6 +113,45 @@ class DBClient():
             l = cur.fetchall()
         return l
 
+    def read_batch(self, statement, chunk_size, max_chunks=None, args=None):
+        """
+        Execute a data query statement, returns all rows using fetchall.
+        Note that since we're using fetchall, we'll be returning all the
+        rows returned by the query. If you'd prefer to fetch rows in 
+        batches, please refer the read_batch command. 
+        
+        :param statement: SQL query to execute
+        :type statement: str #TODO: @amstern, please enter description for below values
+        :param args: [description], defaults to None
+        :param args: [type], optional
+        :return: A tuple of tuples containing the rows from the fetch query
+        :rtype: Tuple of tuples
+        """
+
+        l = []
+        with self.conn.cursor() as cur:
+            if not args:
+                cur.execute(statement)
+            else:
+                cur.execute(statement, args)
+            data = chunk = cur.fetchmany(chunk_size)
+            if not max_chunks:
+                chunks = 1
+                while chunk != []:
+                    logger.info("Loading chunk {}...".format(chunks))
+                    chunk = cur.fetchmany(chunk_size)
+                    data.extend(chunk)
+                    chunks = chunks + 1
+            else:
+                while chunk != [] and max_chunks > 0:
+                    max_chunks = max_chunks - 1
+                    logger.info("Loading chunk...")
+                    chunk = cur.fetchmany(chunk_size)
+                    data.extend(chunk)
+                    logger.info("{} chunks left to load.".format(max_chunks))
+            logger.info("Finished loading data.")
+            return data
+
     def copy(self, csv_path, statement, args=None):
         """
         Execute copy statement.
