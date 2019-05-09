@@ -76,6 +76,9 @@ class DataClean():
         stop_words = set(stopwords.words('english'))
         # amp is encoded for & 
         stop_words.add('amp')
+        
+        tweet_stop = ['like', 'follow', 'reply']
+
         tweet = [i for i in tweet if i not in stop_words and len(i) > 1] 
         
         return tweet
@@ -86,6 +89,11 @@ class DataClean():
         elif rem_hashtag == "select":
             tweet = [i for i in tweet if i not in self.select_hash]
         
+        return tweet
+
+    def bigram(self, tweet):
+        tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)])
+
         return tweet
 
     def pre_process(self, tweet, strip_handles, rem_hashtag):
