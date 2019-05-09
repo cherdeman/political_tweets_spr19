@@ -52,7 +52,7 @@ if __name__ == "__main__":
     
     if args.to_table:
         to_table = args.to_table
-    estlse:
+    else:
         to_table = args.table
 
     run(args.table, args.chunk_size, args.strip_handles, args.rem_hashtags, to_table)
