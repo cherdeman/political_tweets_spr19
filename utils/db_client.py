@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 class DBClient():
 
-    def __init__(self, if_local_connection = True, secrets_path = '../configs/db_secrets.json', 
+    def __init__(self, if_local_connection = True, secrets_path = './configs/db_secrets.json', 
                  schema_name = None, db_name = "politicaltweets"):
         """
         Class for maintaining the database client object, with attributes and 
@@ -38,6 +38,7 @@ class DBClient():
         """
 
         try:
+            print("I'm trying")
             #secrets_file =  secrets_path
             with open(secrets_path) as f:
                 env = json.load(f)
@@ -50,15 +51,16 @@ class DBClient():
             conn = psycopg2.connect(database=self.DB_NAME, user=self.DB_USER,
                                     password=self.DB_PASSWORD, host=self.DB_HOST, 
                                     port=self.DB_PORT)
+
+            self.conn = conn
+            self.cur = self.conn.cursor()
+            print("Connected to political tweets DB")
+
         except Exception as e:
             print("Error in connecting to database " + db_name)
             print(e)
             
-        finally:
-            print("Connected to political tweets DB")
-            self.conn = conn
-            self.cur = self.conn.cursor()
-
+            
         try:
             if schema_name is not None:
                 conn.cursor().execute("SET SCHEMA '{}';".format(schema_name))

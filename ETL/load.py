@@ -29,12 +29,12 @@ accounts_columns = """
                     token varchar(20),
                     user_id varchar(20),
                     link varchar(50),
-                    party_affiliation varchar(5),
+                    party_affiliation varchar(1),
                     primary key (user_id)
                    """
 
 tweet_col_names = "tweet_id, tweet_date, tweet_text, user_id, retweet_count, favorite_count"
-account_col_names = "token, user_id, link"#, party_affiliation"
+account_col_names = "token, user_id, link, party_affiliation"
 
 copy = """
        copy {}({}) 
@@ -71,7 +71,7 @@ def load(db):
         db.write([drop_statement, create_statement])
 
         print(f"Copying from {filename} into {full_table_name}")
-        csv_path = f"../data/{filedir}/{filename}"
+        csv_path = f"./data/{filedir}/{filename}"
         db.copy(csv_path, copy_statement)
 
     db.exit()
