@@ -20,17 +20,16 @@ tweet_columns = """
                   tweet_id varchar(20) NOT NULL,
                   tweet_date date,
                   tweet_text text,
-                  user_id varchar(20) NOT NULL,
+                  user_id varchar(30) NOT NULL,
                   retweet_count int,
                   favorite_count int
                 """
 
 accounts_columns = """
                     token varchar(20),
-                    user_id varchar(20),
+                    user_id varchar(30),
                     link varchar(50),
-                    party_affiliation varchar(1),
-                    primary key (user_id)
+                    party_affiliation varchar(1)
                    """
 
 tweet_col_names = "tweet_id, tweet_date, tweet_text, user_id, retweet_count, favorite_count"
