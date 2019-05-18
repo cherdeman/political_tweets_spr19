@@ -14,7 +14,7 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
     if "democrat" in table:
         dc = DataClean(select_hash_dem)
     else:
-        dc = DataClean(select_hash_rep)
+        dc = DataClean(select_hashtmux_rep)
 
     chunk_size = int(chunk_size)
     query = "select * from {}".format(table)
@@ -53,6 +53,6 @@ if __name__ == "__main__":
     if args.to_table:
         to_table = args.to_table
     else:
-        to_table = args.table
+        to_table = args.table.split('.')[1]
 
     run(args.table, args.chunk_size, args.strip_handles, args.rem_hashtags, to_table)

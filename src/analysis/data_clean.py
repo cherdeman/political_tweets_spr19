@@ -92,7 +92,7 @@ class DataClean():
         return tweet
 
     def bigram(self, tweet):
-        tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)])
+        tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)]
 
         return tweet
 
