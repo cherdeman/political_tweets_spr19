@@ -7,8 +7,7 @@ from nltk.corpus import wordnet
 from nltk.util import ngrams
 from gensim.utils import simple_preprocess
 import re
-
-
+import pandas as pd
 
 class DataClean():
     def __init__(self, select_hash, cleaned_tweet_field = 'tweet_text_clean'):
@@ -21,6 +20,16 @@ class DataClean():
         """
         self.tweet_field = cleaned_tweet_field
         self.select_hash = select_hash
+        self.topic_dict = self.create_topic_dict('ETL/final_topics.csv')
+
+    def create_topic_dict(self,file_name):
+        d = {}
+        data = pd.read_csv(file_name)
+        for i, row in data.iterrows():
+            if row['Topic'] != 'x':
+                d[row['Bigram']] = row['Topic']
+        
+        return d
 
     def rem_punctuation(self, tweet):
         # remove hashtag from punctuation because we wish to preserve
@@ -91,10 +100,27 @@ class DataClean():
         
         return tweet
 
-    def bigram(self, tweet):
-        tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)]
+    def bigram(self, tweet, rem_hashtags):
+        if rem_hashtags == "all":
+            tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)]
+        else:
+            tweet = self.rem_hashtag(tweet, "all")
+            tweet = tweet + ["_".join(w) for w in ngrams(tweet, 2)]
 
         return tweet
+
+    def political(self, bigrams):
+        if len(set(bigrams).intersection(self.topic_dict.keys())) > 0:
+            return True
+        else:
+            return False
+
+    def topics(self, bigrams):
+        unique_topics = set([self.topic_dict.get(bigram, 0) for bigram in bigrams])
+
+        return [x for x in unique_topics if x != 0]
+        
+
 
     def pre_process(self, tweet, strip_handles, rem_hashtag):
         tweet = self.rem_punctuation(tweet)
@@ -108,6 +134,8 @@ class DataClean():
             return tweet
         else:
             return []
+
+    
         
 
 
