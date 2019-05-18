@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 class DBClient():
 
-    def __init__(self, if_local_connection = True, secrets_path = '../../configs/db_secrets.json', 
+    def __init__(self, if_local_connection = True, secrets_path = './configs/db_secrets.json', 
                  schema_name = None, db_name = "politicaltweets"):
         """
         Class for maintaining the database client object, with attributes and 
@@ -38,6 +38,7 @@ class DBClient():
         """
 
         try:
+            print("I'm trying")
             #secrets_file =  secrets_path
             with open(secrets_path) as f:
                 env = json.load(f)
@@ -50,15 +51,16 @@ class DBClient():
             conn = psycopg2.connect(database=self.DB_NAME, user=self.DB_USER,
                                     password=self.DB_PASSWORD, host=self.DB_HOST, 
                                     port=self.DB_PORT)
+
+            self.conn = conn
+            self.cur = self.conn.cursor()
+            print("Connected to political tweets DB")
+
         except Exception as e:
             print("Error in connecting to database " + db_name)
             print(e)
             
-        finally:
-            print("Connected to political tweets DB")
-            self.conn = conn
-            self.cur = self.conn.cursor()
-
+            
         try:
             if schema_name is not None:
                 conn.cursor().execute("SET SCHEMA '{}';".format(schema_name))
@@ -112,6 +114,45 @@ class DBClient():
                 cur.execute(statement, args)
             l = cur.fetchall()
         return l
+
+    def read_batch(self, statement, chunk_size, max_chunks=None, args=None):
+        """
+        Execute a data query statement, returns all rows using fetchall.
+        Note that since we're using fetchall, we'll be returning all the
+        rows returned by the query. If you'd prefer to fetch rows in 
+        batches, please refer the read_batch command. 
+        
+        :param statement: SQL query to execute
+        :type statement: str #TODO: @amstern, please enter description for below values
+        :param args: [description], defaults to None
+        :param args: [type], optional
+        :return: A tuple of tuples containing the rows from the fetch query
+        :rtype: Tuple of tuples
+        """
+
+        l = []
+        with self.conn.cursor() as cur:
+            if not args:
+                cur.execute(statement)
+            else:
+                cur.execute(statement, args)
+            data = chunk = cur.fetchmany(chunk_size)
+            if not max_chunks:
+                chunks = 1
+                while chunk != []:
+                    logger.info("Loading chunk {}...".format(chunks))
+                    chunk = cur.fetchmany(chunk_size)
+                    data.extend(chunk)
+                    chunks = chunks + 1
+            else:
+                while chunk != [] and max_chunks > 0:
+                    max_chunks = max_chunks - 1
+                    logger.info("Loading chunk...")
+                    chunk = cur.fetchmany(chunk_size)
+                    data.extend(chunk)
+                    logger.info("{} chunks left to load.".format(max_chunks))
+            logger.info("Finished loading data.")
+            return data
 
     def copy(self, csv_path, statement, args=None):
         """
