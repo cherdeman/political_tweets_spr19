@@ -3,21 +3,21 @@ from utils.db_client import DBClient
 master_query = """
 drop table if exists staging.master cascade;
 create table staging.master as (
-	select *, 1 as democrat 
+	select *, true as democrat 
 	from staging.democrat
 	union
-	select *, 0 as democrat 
+	select *, false as democrat 
 	from staging.republican
 	union
-	select h.*, case when ha.party_affiliation = 'D' then 1
-					 when ha.party_affiliation = 'R' then 0
+	select h.*, case when ha.party_affiliation = 'D' then true
+					 when ha.party_affiliation = 'R' then false
 					 else null end as democrat
 	from staging.house h
 	join raw.house_accounts ha
 	using(user_id)
 	union
-	select s.*, case when sa.party_affiliation = 'D' then 1
-					 when sa.party_affiliation = 'R' then 0
+	select s.*, case when sa.party_affiliation = 'D' then true
+					 when sa.party_affiliation = 'R' then false
 					 else null end as democrat
 	from staging.senate s
 	join raw.senate_accounts sa
