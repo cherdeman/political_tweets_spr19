@@ -3,8 +3,8 @@ from utils.db_client import DBClient
 
 tables = {"senate":["tweets","senate_tweets.csv"],
           "house": ["tweets","house_tweets.csv"],
-          "democrat":["tweets","dem_tweets.csv"],
-          "republican":["tweets","rep_tweets.csv"],
+          "democrat":["tweets","dem_tweets_combo.csv"],
+          "republican":["tweets","rep_tweets_combo.csv"],
           "house_accounts": ["lookups","house-accounts.csv"],
           "senate_accounts": ["lookups","senate-accounts.csv"]}
 
