@@ -1,0 +1,24 @@
+{
+    "iteration_name": "code_review_refresh",
+    "feature_table_name": "<feature table name>",
+    "reqd_cols": [ ],
+    "label_col": "<label name>",
+    "reqd_rows_fraction": 0.2,
+    "zero_downsample_frac": 1,
+    "test_frac": 0.3,
+    "run_type": "refresh",
+    "grid": {"NB": {
+                "type": "GaussianNB()",
+                "grid": {"priors": [], 
+                        "var_smoothing": [1e-09]}}, 
+            "LR": {
+                "type": "LogisticRegression()",
+                "grid": {"penalty": [], 
+                        "C": []}}
+            },
+    "model_obj_path": "<path to model if relevant>",
+    "scoring": "recall",
+    "score_k_val": 2000,
+    "score_k_type": "count"
+
+}
