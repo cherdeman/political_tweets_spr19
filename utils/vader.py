@@ -1,5 +1,7 @@
 from utils.db_client import DBClient
 import pandas as pd
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 class VADER_analyzer:
@@ -8,7 +10,7 @@ class VADER_analyzer:
         self.query = """
                     SELECT tweet_id, tweet_date, tweet_text_raw, user_id, democrat, leadership
                     from staging.master
-                    where {} = 1
+                    where {} = true
                     """
         self.df = None
 
@@ -20,7 +22,20 @@ class VADER_analyzer:
 
 
     def run_vader(self):
-        pass
+        sid = SentimentIntensityAnalyzer()
+
+        self.df['negative'] = None
+        self.df['neutral'] = None
+        self.df['positive'] = None
+        self.df['compound'] = None
+
+        for index, row in self.df.iterrows():
+            tweet_text = row['tweet_text_raw']
+            ss = sid.polarity_scores(tweet_text)
+            self.df.iloc(index)['negative'] = ss['neg']
+            self.df.iloc(index)['neutral'] = ss['neu']
+            self.df.iloc(index)['positive'] = ss['pos']
+            self.df.iloc(index)['compound'] = ss['compound']
 
     def outcome_by_group(self):
-        pass
+        
