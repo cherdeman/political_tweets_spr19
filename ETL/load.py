@@ -1,15 +1,14 @@
 # queries and functions to load tweet data files into database
 from utils.db_client import DBClient
 
-#tables = {"senate":["tweets","senate_tweets.csv"],
-#          "house": ["tweets","house_tweets.csv"],
-#          "democrat":["tweets","dem_tweets.csv"],
-#          "republican":["tweets","rep_tweets.csv"],
-#          "house_accounts": ["lookups","house-accounts.csv"],
-#          "senate_accounts": ["lookups","senate-accounts.csv"],
-#          "train_twitter140": ["training", "train_twitter140.csv"]}
+tables = {"senate":["tweets","senate_tweets.csv"],
+         "house": ["tweets","house_tweets.csv"],
+         "democrat":["tweets","dem_tweets.csv"],
+         "republican":["tweets","rep_tweets.csv"],
+         "house_accounts": ["lookups","house-accounts.csv"],
+         "senate_accounts": ["lookups","senate-accounts.csv"],
+         "train_twitter140": ["training", "train_twitter140.csv"]}
 
-tables = {"train_twitter140": ["training", "train_twitter2.csv"]}
 
 ####### QUERIES ######
 
