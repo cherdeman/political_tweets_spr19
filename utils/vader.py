@@ -17,7 +17,7 @@ class VADER_Analyzer:
         self.df = None
         self.results = None
         self.choices = ['dem-lead', 'dem-base', 'rep-lead', 'rep-base']
-        self.palette = {"dem-base": "#a8b2ff","dem-lead": "#0015bc", "rep-base": "#ff9d9d", "rep-lead": "#ff0000"}
+        self.palette = {"dem-base": "#a8b2ff","dem-lead": "#0015bc", "rep-base": "#ff9d9d", "rep-lead": "#ff0000", "": "gray"}
 
 
     def get_data(self):
@@ -68,9 +68,10 @@ class VADER_Analyzer:
     def results_for_plotting(self):
         self.df['group'] = np.where((self.df['democrat']==True) & (self.df['leadership']==True), 'dem-lead', 
             np.where((self.df['democrat']==True) & (self.df['leadership']==False), 'dem-base',
-            np.where((self.df['democrat']==False) & (self.df['leadership']==True), 'rep-lead', 'rep-base')))
+            np.where((self.df['democrat']==False) & (self.df['leadership']==True), 'rep-lead', 
+            np.where((self.df['democrat']==False) & (self.df['leadership']==False), 'rep-base', ""))))
 
-        self.plotting = pd.melt(self.df, id_vars = ['democrat', 'leadership', 'group', 'tweet_id', 'tweet_date', 'tweet_text_raw', 'user_id'])
+        self.plotting = pd.melt(self.df[self.df['group'] != ""], id_vars = ['democrat', 'leadership', 'group', 'tweet_id', 'tweet_date', 'tweet_text_raw', 'user_id'])
         # results_to_plot = pd.melt(self.results, id_vars = ['democrat', 'leadership'])
 
         # results_to_plot['group'] = np.where((results_to_plot['democrat']==True) & (results_to_plot['leadership']==True), 'dem-lead', 
