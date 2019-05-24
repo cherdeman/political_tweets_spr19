@@ -97,4 +97,3 @@ class VADER_Analyzer:
             data = self.plotting
 
         return sns.barplot(x='variable', y='value', hue='group', data=data, palette=self.palette)
-
