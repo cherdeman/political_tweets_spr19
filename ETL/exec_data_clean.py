@@ -23,8 +23,12 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
 
     data = db.read_batch(query, chunk_size)
     data = pd.DataFrame(data)
-    data.rename(index =str, columns = {0: 'tweet_id', 1: 'tweet_date', 2: 'tweet_text_raw', 
-    3: 'user_id', 4: 'retweet_count', 5: 'favorite_count'}, inplace=True)    
+    if "twitter140" in table:
+        data.rename(index =str, columns = {0: 'label', 1: 'id', 2: 'date', 
+        3: 'flag', 4: 'user', 5: 'tweet_text_raw'}, inplace=True)  
+    else: 
+        data.rename(index =str, columns = {0: 'tweet_id', 1: 'tweet_date', 2: 'tweet_text_raw', 
+        3: 'user_id', 4: 'retweet_count', 5: 'favorite_count'}, inplace=True)    
     
     data['tweet_text_clean'] = data['tweet_text_raw'].apply(lambda x: dc.pre_process(x, strip_handles, rem_hashtags))
     data['bigrams'] = data['tweet_text_clean'].apply(lambda x: dc.bigram(x, rem_hashtags))
@@ -35,9 +39,9 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
 
     # create leadership column (1 if leadership)
     if table in ("raw.senate", "raw.house"):
-        data_political['leadership'] = 0
-    else:
         data_political['leadership'] = 1
+    else:
+        data_political['leadership'] = 0
 
     # create one hot encoded columns for topics
 
@@ -55,16 +59,19 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
     to_table_name = "staging.{}".format(to_table)
 
     drop_table = "DROP TABLE if exists {}".format(to_table_name)
-    create_table = '''CREATE TABLE {} (tweet_id text, tweet_date date, 
-    tweet_text_raw text, user_id text, retweet_count int, favorite_count int, tweet_text_clean text,
-    leadership boolean, budget boolean, civil_rights boolean, courts boolean, criminal_justice boolean, 
-    drugs boolean, econ_inequality boolean, econ_jobs boolean, education boolean, 
-    environment boolean, family boolean, foreign_policy boolean, governance boolean,
-    guns boolean, health boolean, immigration boolean, military boolean, 
-    public_safety boolean, puerto_rico boolean, race boolean, rural boolean, russia boolean,
-    sexual_assault boolean, shutdown boolean, social_security boolean, taxes boolean,
-    technology boolean, women_rights boolean)'''.format(to_table_name)
-
+    topic_list = list(set(dc.topic_dict.values()))
+    topic_list.sort()
+    if "twitter140" in table:
+        create_table = '''CREATE TABLE {} (label smallint, tweet_id varchar(20), tweet_date date, flag varchar(20), user_name varchar(30), tweet_text_raw text, tweet_text_clean text, leadership boolean, '''.format(to_table_name)
+        for topic in topic_list:
+            create_table += "{} boolean, ".format(topic)
+        create_table = create_table[:-2] + ")"
+    else:
+        create_table = '''CREATE TABLE {} (tweet_id text, tweet_date date, tweet_text_raw text, user_id text, retweet_count int, favorite_count int, tweet_text_clean text, leadership boolean, '''.format(to_table_name)
+        for topic in topic_list:
+            create_table += "{} boolean, ".format(topic)
+        create_table = create_table[:-2] + ")"
+    
     db.write(["CREATE SCHEMA IF NOT EXISTS staging", drop_table, create_table])
     db.copy(file_path, "COPY {} FROM STDIN CSV HEADER".format(to_table_name))
 
