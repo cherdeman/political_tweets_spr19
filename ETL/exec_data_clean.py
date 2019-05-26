@@ -32,7 +32,10 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
     
     data['tweet_text_clean'] = data['tweet_text_raw'].apply(lambda x: dc.pre_process(x, strip_handles, rem_hashtags))
     data['bigrams'] = data['tweet_text_clean'].apply(lambda x: dc.bigram(x, rem_hashtags))
-    data['political'] = data['bigrams'].apply(dc.political)
+    if "twitter140" in table:
+        data['political'] = True
+    else:
+        data['political'] = data['bigrams'].apply(dc.political)
     
     # drop tweets that do not contain any political bigrams
     data_political = data[data['political']== True]
@@ -46,10 +49,12 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
     # create one hot encoded columns for topics
 
     data_political['topics'] = data_political['bigrams'].apply(dc.topics)
+    topic_list = list(set([st for row in data_political['topics'] for st in row]))
+    topic_list.sort()
     mlb = MultiLabelBinarizer()
     data_political = data_political.join(pd.DataFrame(mlb.fit_transform(data_political.pop('topics')),
-                          columns=mlb.classes_,
-                          index=data_political.index))
+                        columns=mlb.classes_,
+                        index=data_political.index))
 
     data_political.drop(['bigrams', 'political'], axis=1, inplace = True)
     file_path = "data/{}_clean.csv".format(table)
@@ -57,10 +62,8 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
 
     #to_table_name = "staging.{}".format(table.split('.')[1])
     to_table_name = "staging.{}".format(to_table)
-
     drop_table = "DROP TABLE if exists {}".format(to_table_name)
-    topic_list = list(set(dc.topic_dict.values()))
-    topic_list.sort()
+    
     if "twitter140" in table:
         create_table = '''CREATE TABLE {} (label smallint, tweet_id varchar(20), tweet_date date, flag varchar(20), user_name varchar(30), tweet_text_raw text, tweet_text_clean text, leadership boolean, '''.format(to_table_name)
         for topic in topic_list:
