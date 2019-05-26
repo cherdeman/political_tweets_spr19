@@ -4,3 +4,4 @@ gensim==3.7.2
 twython==3.7.0
 sklearn==0.0
 pandas==0.24.2
+torchtext==0.3.1
