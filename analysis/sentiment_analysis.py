@@ -1,4 +1,23 @@
-logger = logging.getLogger('vzlog')
+import pandas as pd
+import numpy as np
+import sklearn
+from sklearn.metrics import *
+from sklearn.utils.class_weight import compute_sample_weight 
+from sklearn.model_selection import GridSearchCV
+import graphviz
+import pickle
+from datetime import datetime as dt
+import logging
+import sys
+import matplotlib
+matplotlib.use('PS')
+from matplotlib import pyplot as plt
+import pathlib, os
+import joblib
+ 
+
+
+logger = logging.getLogger('model_log')
 sh = logging.StreamHandler(sys.stdout)
 logger.addHandler(sh)
 logger.setLevel(logging.INFO)
@@ -64,8 +83,6 @@ class Pipeline():
             self.threshold = threshold
         else:
             self.threshold = int(len(y_train) * (threshold / 100.0))
-      
-
         if pipeline_mode.lower() == "build":
             scorer = self._make_score_fxn()
             grid_obj = self._train_grid(scorer = scorer, key = grid_model_id_key)
@@ -151,7 +168,7 @@ class Pipeline():
         clf = GridSearchCV(model, parameters, scoring = scorer, cv=5)
         clf.fit(self.X_train, self.y_train)
         time_now = dt.now()
-        filepath_base = os.path.join(pathlib.Path(__file__).parent, "models_store")
+        filepath_base = os.path.join(pathlib.Path(__file__), "analysis/models_store")
 
         print(model)
         print(clf)
@@ -221,7 +238,7 @@ class Pipeline():
         :return: array of predicted probabilities of label = 1
         :rtype: array
         """
-        # [:, 1] returns probability class = 1
+        # [:, 1] returns probability class = 4
         return(self.estimator.predict_proba(Xtest)[:, 1])
 
     def _get_sample_weights(self, if_balance_weights, y_train):
@@ -278,12 +295,15 @@ class Pipeline():
         :rtype: array
         """
 
+
         if k_type.lower() == "percent":
             cutoff_index = int(len(y_pred_probs) * (k / 100.0))
         elif k_type.lower() == "count":
             cutoff_index = k
+        
+        # positive sentiment = 4
         test_predictions_binary = [
-            1 if x < cutoff_index else 0 for x in range(len(y_pred_probs))]
+            4 if x < cutoff_index else 0 for x in range(len(y_pred_probs))]
 
         return test_predictions_binary
 

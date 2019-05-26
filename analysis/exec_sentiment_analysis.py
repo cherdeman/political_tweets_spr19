@@ -2,11 +2,12 @@ from utils.db_client import DBClient
 from analysis.sentiment_analysis import Pipeline
 from datetime import datetime as dt
 import sklearn
+from sklearn.model_selection import train_test_split
 # import NB and LR classifiers
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
-
 import numpy as np
+import pandas as pd
 import os
 from datetime import datetime as dt
 import pathlib, os
@@ -24,7 +25,7 @@ def run(config_file):
 
     # Logging information about the run
     time_now = dt.now()
-    log_file_name = "log_exec_model_build_{}.txt".format(time_now)
+    log_file_name = "log_exec_model_build__{}_{}.txt".format(iteration_name, time_now)
     logging.basicConfig(filename = log_file_name, filemode = "w", level = logging.DEBUG,
                         format = "%(asctime)s - %(levelname)s - %(message)s")
 
@@ -46,6 +47,8 @@ def run(config_file):
     reqd_cols = params['reqd_cols']
 
     label_col = params['label_col']# enter name of the label column
+    
+    # assuming reqd_rows_fraction = 1
     reqd_rows_fraction = float(params['reqd_rows_fraction']) # enter fraction of rows from feature table needed, as a decimal
     if reqd_rows_fraction < 1:
         if_nowrite_sample_tbl = False
@@ -64,51 +67,42 @@ def run(config_file):
     logging.info(log_dl_msg)
 
     # Data Prep Params
-    zero_downsample_frac = float(params['zero_downsample_frac']) # Fraction of the zeros you want to downsample to. Leave to 1 if not downsampling
     test_frac = float(params['test_frac']) # Fraction of the dataset to be used as a testing set
+    val_frac = float(params['val_frac']) # Fraction of the dataset to be used as a testing set
+    
     train_frac = 1 - test_frac
+    val_frac = val_frac/train_frac #calculate updated val_frac for use in two-step split below
+    reqd_cols = params['reqd_cols']
+    label_col = params['label_col']
 
     # Logging data prep parameters
-    log_dp_msg = ("The Zeros in the sample were downsampled to {}%\n" +
-                  "The percentage of data used as testing fraction is {}\n").format(
-                      zero_downsample_frac*100, test_frac
-                      )
+    log_dp_msg = ("The percentage of data used as testing fraction is {}\n" +
+        "The percentage of data used as validation fraction is {}").format(test_frac, val_frac)
     logging.info(log_dp_msg)
 
     # Data Prep Objects
     db_client = DBClient()
-    data_prepper = DataPrep(db_client, feature_table_name, label_col)
+    selected_col_query_section = ", ".join(reqd_cols)
 
     try:
-        df = data_prepper.load_data(reqd_cols, if_nowrite_sample_tbl, reqd_rows_fraction, iteration_name)
+        load_query = "SELECT {} FROM {};".format(selected_col_query_section, 
+                                                        feature_table_name)
+
+        rows = db_client.read(statement = load_query)
+        data = pd.DataFrame(rows)
+        data.columns = reqd_cols
         log_msg = "STEP PASSED: LOADED DB DATA INTO MEMORY" 
         print(log_msg)
         logging.debug(log_msg)
-
     except Exception as e:
         log_msg = "DATALOAD ERROR: UNABLE TO LOAD THE DATA FROM THE FEATURES TABLE" 
         print(log_msg)
         print(e)
         logging.error(log_msg)
         logging.error(e)
-    
+        
     try:
-        df = data_prepper.downsample_zeros(data = df, 
-                                           frac = zero_downsample_frac)
-        log_msg = "STEP PASSED: SUCCESSFULLY DOWNSAMPLED ZEROS"
-        print(log_msg)
-        logging.debug(log_msg)
-
-    except Exception as e:
-        log_msg = "DATAPREP ERROR: UNABLE TO DOWNSAMPLE ZEEROS. DATAFRAME PASSED \
-                   WITH SAME NUMBER OF ZEROS"
-        print(log_msg)
-        print(e)
-        logging.error(log_msg)
-        logging.error(e)
-    
-    try:
-        X, y = data_prepper.split_x_y(df)
+        X, y = (data.loc[:, data.columns != label_col], data[label_col])
         log_msg = "STEP PASSED: SUCCESSFULLY SPLIT X AND Y COLS" 
         print(log_msg)
         logging.debug(log_msg)
@@ -120,18 +114,16 @@ def run(config_file):
         logging.error(e)
     
     try:
-        X_train, X_test, y_train, y_test = data_prepper.train_test_split(X, y, test_size = test_frac,
-                                                                         train_size = train_frac
-                                                                         )
-
-        print(df.shape)
-        print(X.shape)
-        
-        log_msg = "STEP PASSED: SUCCESSFULLY SPLIT DATA INTO TEST AND TRAIN SETS"
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_frac, random_state = 1234, stratify = y)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size = val_frac, random_state = 1234, stratify = y)
+        print(X_train.shape)
+        print(X_val.shape)
+        print(X_test.shape)    
+        log_msg = "STEP PASSED: SUCCESSFULLY SPLIT DATA INTO TEST, VALIDATION, AND TRAIN SETS"
         print(log_msg)
         logging.debug(log_msg)
     except Exception as e:
-        log_msg = "DATAPREP ERROR: UNABLE TO SPLIT DATA INTO TESTING AND TRAINING SET"
+        log_msg = "DATAPREP ERROR: UNABLE TO SPLIT DATA INTO TESTING, VALIDATION, AND TRAINING SET"
         print(log_msg)
         print(e)
         logging.error(log_msg)
@@ -144,7 +136,7 @@ def run(config_file):
     model_obj_path = params['model_obj_path']
     scoring = params['scoring']
     score_k_val = params['score_k_val']
-    score_k_type = "count"
+    score_k_type = "percent"
     grid = params['grid']
 
     # Logging the modelling parameters
@@ -163,10 +155,10 @@ def run(config_file):
             y_train = y_train, clf_grid = grid, threshold = score_k_val, threshold_type = score_k_type,
             model_obj_path = model_obj_path, model_obj_pref=iteration_name)
 
-            y_test_prob = pipeline.gen_pred_probs(X_test)
-            recall = pipeline.recall_at_k(y_test, y_test_prob, score_k_val, score_k_type)
-            precision = pipeline.precision_at_k(y_test, y_test_prob, score_k_val, score_k_type) 
-            y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_test_prob), np.array(y_test))
+            y_val_prob = pipeline.gen_pred_probs(X_val)
+            recall = pipeline.recall_at_k(y_val, y_val_prob, score_k_val, score_k_type)
+            precision = pipeline.precision_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
+            y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
             binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
             tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
             
@@ -189,12 +181,6 @@ def run(config_file):
             print(e)
             logging.error(log_msg)
             logging.error(e)
-
-    # PART 3: BASELINES
-
-    pipeline.top_10_baseline(y_test, X_test, score_k_val)
-    pipeline.top_ticket_baseline(y_test, X_test, score_k_val)
-    pipeline.random_baseline(y_test, X_test, score_k_val)
 
     
 
