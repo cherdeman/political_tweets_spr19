@@ -128,7 +128,7 @@ class Pipeline():
 
             return make_scorer(precision_at_k)
 
-        else:
+        elif self.scoring == "recall":
 
             def recall_at_k(y_test, y_pred_probs):
                 """Calculate recall of predictions at a threshold k.
@@ -152,6 +152,30 @@ class Pipeline():
                 return recall
 
             return make_scorer(recall_at_k)
+
+        else:
+            def accuracy_at_k(y_test, y_pred_probs):
+                """Calculate accuracy of predictions at a threshold k.
+                
+                :param y_test: labels for testing data
+                :type y_test: array
+                :param y_pred_probs: predicted probabilities of class = 1 for testing data
+                :type y_pred_probs: array
+                :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
+                :type k: int
+                :return: accuracy of model at k%
+                :rtype: float
+                """
+
+                idx = np.argsort(np.array(y_pred_probs), kind='mergesort')[::-1]
+                y_pred_probs_sorted = np.array(y_pred_probs)[idx]
+                y_test_sorted = np.array(y_test)[idx]
+                preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
+                accuracy = accuracy_score(y_test_sorted, preds_at_k)
+
+                return accuracy
+
+            return make_scorer(accuracy_at_k)
 
     def _train_grid(self, scorer, key):       
         """
