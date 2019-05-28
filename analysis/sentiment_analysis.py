@@ -190,7 +190,7 @@ class Pipeline():
         """
         model = eval(self.clf_grid[key]["type"])
         parameters = self.clf_grid[key]["grid"]
-        clf = GridSearchCV(model, parameters, scoring = scorer, cv=5)
+        clf = GridSearchCV(model, parameters, scoring = "accuracy", cv=5)
         clf.fit(self.X_train, self.y_train)
         time_now = dt.now()
         filepath_base = "analysis/models_store"
@@ -265,6 +265,18 @@ class Pipeline():
         """
         # [:, 1] returns probability class = 4
         return(self.estimator.predict_proba(Xtest)[:, 1])
+
+    def gen_preds(self, Xtest):
+        """
+        Generates predicted probabilities of class membership
+        
+        :param Xtest: testing features
+        :type Xtest: pandas dataframe
+        :return: array of predicted probabilities of label = 1
+        :rtype: array
+        """
+        # [:, 1] returns probability class = 4
+        return self.estimator.predict(Xtest)
 
     def _get_sample_weights(self, if_balance_weights, y_train):
         """
@@ -403,6 +415,29 @@ class Pipeline():
         y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
             np.array(y_pred_probs), np.array(y_test))
         preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
+        accuracy = accuracy_score(y_test_sorted, preds_at_k)
+
+        return accuracy
+
+    def accuracy(self, y_test, X_test):
+        """
+        Calculate recall of predictions at a threshold k.
+        k can be either a number threshold or a percentage of total threshold.
+
+        :param y_test: labels for testing data
+        :type y_test: array
+        :param y_pred_probs: predicted probabilities of class = 1 for testing data
+        :type y_pred_probs: array
+        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
+        :type k: int
+        :param k_type:Type of threshold K is - either absolute number or percentage. 
+                      Can take values "percent" or "count"
+        :type k_type: str
+        :return: recall of model at k%
+        :rtype: float
+        """
+
+        pred_class = clf.predict(X[:2, :])
         accuracy = accuracy_score(y_test_sorted, preds_at_k)
 
         return accuracy

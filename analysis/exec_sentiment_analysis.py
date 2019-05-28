@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 # import NB and LR classifiers
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 import numpy as np
 import pandas as pd
 import os
@@ -91,7 +92,7 @@ def run(config_file):
     try:
         # TO_DO
         # change back after testing
-        load_query = "SELECT {} FROM {} ORDER BY RANDOM() LIMIT 10000;".format(selected_col_query_section, 
+        load_query = "SELECT {} FROM {} ORDER BY RANDOM() LIMIT 500000;".format(selected_col_query_section, 
                                                         feature_table_name)
 
         rows = db_client.read(statement = load_query)
@@ -128,7 +129,9 @@ def run(config_file):
     try:
         X['doc'] = X['tweet_text_clean'].apply(lambda x: " ".join(x))
         print(X.head())
-        vectorizer = TfidfVectorizer()
+        min_df = .0001
+        logging.debug("The min_df used is {}".format(min_df))
+        vectorizer = TfidfVectorizer(min_df = min_df)
         X = vectorizer.fit_transform(X['doc'])
         print(X.shape)
         print(y.shape)
@@ -187,28 +190,33 @@ def run(config_file):
             model_obj_path = model_obj_path, model_obj_pref=iteration_name)
 
             y_val_prob = pipeline.gen_pred_probs(X_val)
+            y_val_pred_class = pipeline.gen_preds(X_val)
             recall = pipeline.recall_at_k(y_val, y_val_prob, score_k_val, score_k_type)
             precision = pipeline.precision_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
             accuracy = pipeline.accuracy_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
+            accuracy_100 = accuracy_score(y_val, y_val_pred_class)
             y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
             binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
-            tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
+            #tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
             
-            print("TN: {}".format(tn))
-            print("TP: {}".format(tp))
-            print("FN: {}".format(fn))
-            print("FP: {}".format(fp))
-            logging.info("TN: {}".format(tn))
-            logging.info("TP: {}".format(tp))
-            logging.info("FN: {}".format(fn))
-            logging.info("FP: {}".format(fp))
+            #print("TN: {}".format(tn))
+            #print("TP: {}".format(tp))
+            #print("FN: {}".format(fn))
+            #print("FP: {}".format(fp))
+            #logging.info("TN: {}".format(tn))
+            #logging.info("TP: {}".format(tp))
+            #logging.info("FN: {}".format(fn))
+            #logging.info("FP: {}".format(fp))
         
             print("Test precision at {}: {}".format(score_k_val, precision))
             print("Test recall at {}: {}".format(score_k_val, recall))
             print("Test accuracy at {}: {}".format(score_k_val, accuracy))
+            print("Full val accuracy: {}".format(accuracy_100))
             logging.info("Test precision at {}: {}".format(score_k_val, precision))
             logging.info("Test recall at {}: {}".format(score_k_val, recall))
-            logging.info("Test recall at {}: {}".format(score_k_val, accuracy))
+            logging.info("Test accuracy at {}: {}".format(score_k_val, accuracy))
+            logging.info("full val accuracy: {}".format(accuracy_100))
+            
 
         except Exception as e:
             log_msg = "MODEL BUILD ERROR: MODEL FAILED"
