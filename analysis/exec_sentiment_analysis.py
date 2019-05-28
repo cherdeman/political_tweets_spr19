@@ -1,8 +1,10 @@
 from utils.db_client import DBClient
 from analysis.sentiment_analysis import Pipeline
 from datetime import datetime as dt
+from ast import literal_eval
 import sklearn
 from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
 # import NB and LR classifiers
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
@@ -51,7 +53,9 @@ def run(config_file):
     # assuming reqd_rows_fraction = 1
     reqd_rows_fraction = float(params['reqd_rows_fraction']) # enter fraction of rows from feature table needed, as a decimal
     if reqd_rows_fraction < 1:
-        if_nowrite_sample_tbl = False
+        #TO_DO
+        # edit if want to change
+        if_nowrite_sample_tbl = True
     else:
         if_nowrite_sample_tbl = True
 
@@ -85,7 +89,9 @@ def run(config_file):
     selected_col_query_section = ", ".join(reqd_cols)
 
     try:
-        load_query = "SELECT {} FROM {};".format(selected_col_query_section, 
+        # TO_DO
+        # change back after testing
+        load_query = "SELECT {} FROM {} ORDER BY RANDOM() LIMIT 10000;".format(selected_col_query_section, 
                                                         feature_table_name)
 
         rows = db_client.read(statement = load_query)
@@ -102,6 +108,12 @@ def run(config_file):
         logging.error(e)
         
     try:
+        data['tweet_text_clean'] = data['tweet_text_clean'].apply(lambda x: literal_eval(x))
+        data['len'] = data['tweet_text_clean'].apply(lambda x: len(x))
+        data = data[data['len'] > 0]
+        data.loc[data.label == 4, 'label'] = 1
+        data['label'] = data['label'].astype(int)
+        print(data.label.unique())
         X, y = (data.loc[:, data.columns != label_col], data[label_col])
         log_msg = "STEP PASSED: SUCCESSFULLY SPLIT X AND Y COLS" 
         print(log_msg)
@@ -112,10 +124,28 @@ def run(config_file):
         print(e)
         logging.error(log_msg)
         logging.error(e)
-    
+
     try:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_frac, random_state = 1234, stratify = y)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size = val_frac, random_state = 1234, stratify = y)
+        X['doc'] = X['tweet_text_clean'].apply(lambda x: " ".join(x))
+        print(X.head())
+        vectorizer = TfidfVectorizer()
+        X = vectorizer.fit_transform(X['doc'])
+        print(X.shape)
+        print(y.shape)
+    except Exception as e:
+        log_msg = "DATAPREP ERROR: UNABLE TO PRODUCE TF-IDF FEATURES"
+        print(log_msg)
+        print(e)
+        logging.error(log_msg)
+        logging.error(e)
+
+    try:
+        X_train_int, X_test, y_train_int, y_test = train_test_split(X, y, test_size = test_frac, random_state = 1234, stratify = y)
+        print("int shapes...")
+        print(X_train_int.shape)
+        print(y_train_int.shape)
+        print("splitting into val set...")
+        X_train, X_val, y_train, y_val = train_test_split(X_train_int, y_train_int, test_size = val_frac, random_state = 1234, stratify = y_train_int)
         print(X_train.shape)
         print(X_val.shape)
         print(X_test.shape)    
@@ -150,14 +180,16 @@ def run(config_file):
     logging.info(log_mdl_msg)
 
     for key in grid.keys():
+        print("Now training model family {} ".format(key))
         try:
-            pipeline = Pipeline(pipeline_mode = run_type, grid_model_id_key= key, X_train = X_train, 
+            pipeline = Pipeline(pipeline_mode = run_type, grid_model_id_key= key, X_train = X_train.todense(), 
             y_train = y_train, clf_grid = grid, threshold = score_k_val, threshold_type = score_k_type,
             model_obj_path = model_obj_path, model_obj_pref=iteration_name)
 
             y_val_prob = pipeline.gen_pred_probs(X_val)
             recall = pipeline.recall_at_k(y_val, y_val_prob, score_k_val, score_k_type)
             precision = pipeline.precision_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
+            accuracy = pipeline.accuracy_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
             y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
             binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
             tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
@@ -173,8 +205,10 @@ def run(config_file):
         
             print("Test precision at {}: {}".format(score_k_val, precision))
             print("Test recall at {}: {}".format(score_k_val, recall))
+            print("Test accuracy at {}: {}".format(score_k_val, accuracy))
             logging.info("Test precision at {}: {}".format(score_k_val, precision))
             logging.info("Test recall at {}: {}".format(score_k_val, recall))
+            logging.info("Test recall at {}: {}".format(score_k_val, accuracy))
 
         except Exception as e:
             log_msg = "MODEL BUILD ERROR: MODEL FAILED"

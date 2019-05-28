@@ -1,24 +1,19 @@
 {
-    "iteration_name": "code_review_refresh",
-    "feature_table_name": "<feature table name>",
-    "reqd_cols": [ ],
-    "label_col": "<label name>",
+    "iteration_name": "test_run",
+    "feature_table_name": "staging.train_twitter140",
+    "reqd_cols": ["label", "tweet_text_clean"],
+    "label_col": "label",
     "reqd_rows_fraction": 0.2,
-    "test_frac": 0.2,
-    "val_frac": 0.2,
-    "run_type": "refresh",
-    "grid": {"NB": {
-                "type": "GaussianNB()",
-                "grid": {"priors": [], 
-                        "var_smoothing": [1e-09]}}, 
-            "LR": {
-                "type": "LogisticRegression()",
-                "grid": {"penalty": [], 
-                        "C": []}}
-            },
+    "test_frac": 0.1,
+    "val_frac": 0.1,
+    "run_type": "build",
+    "grid": {"LR": {
+                    "type": "LogisticRegression()",
+                    "grid": {"penalty" : ["l1", "l2"], "C": [0.001]}
+            }},
     "model_obj_path": "<path to model if relevant>",
-    "scoring": "recall",
-    "score_k_val": 2000,
-    "score_k_type": "count"
+    "scoring": "accuracy",
+    "score_k_val": 100,
+    "score_k_type": "percent"
 
 }

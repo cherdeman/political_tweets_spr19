@@ -31,6 +31,7 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
         3: 'user_id', 4: 'retweet_count', 5: 'favorite_count'}, inplace=True)    
     
     data['tweet_text_clean'] = data['tweet_text_raw'].apply(lambda x: dc.pre_process(x, strip_handles, rem_hashtags))
+    data = data[len(data['tweet_text_clean']) > 0]
     data['bigrams'] = data['tweet_text_clean'].apply(lambda x: dc.bigram(x, rem_hashtags))
     if "twitter140" in table:
         data['political'] = True

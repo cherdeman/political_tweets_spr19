@@ -4,7 +4,8 @@ import sklearn
 from sklearn.metrics import *
 from sklearn.utils.class_weight import compute_sample_weight 
 from sklearn.model_selection import GridSearchCV
-import graphviz
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
 import pickle
 from datetime import datetime as dt
 import logging
@@ -122,7 +123,7 @@ class Pipeline():
                 y_pred_probs_sorted = np.array(y_pred_probs)[idx]
                 y_test_sorted = np.array(y_test)[idx]
                 preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
-                precision = precision_score(y_test_sorted, preds_at_k)
+                precision = precision_score(y_test_sorted, preds_at_k, average = 'micro')
                 
                 return precision
 
@@ -147,7 +148,7 @@ class Pipeline():
                 y_pred_probs_sorted = np.array(y_pred_probs)[idx]
                 y_test_sorted = np.array(y_test)[idx]
                 preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
-                recall = recall_score(y_test_sorted, preds_at_k)
+                recall = recall_score(y_test_sorted, preds_at_k, average = 'micro')
 
                 return recall
 
@@ -171,7 +172,7 @@ class Pipeline():
                 y_pred_probs_sorted = np.array(y_pred_probs)[idx]
                 y_test_sorted = np.array(y_test)[idx]
                 preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
-                accuracy = accuracy_score(y_test_sorted, preds_at_k)
+                accuracy = accuracy_score(y_test_sorted, preds_at_k, average = 'micro')
 
                 return accuracy
 
@@ -192,7 +193,7 @@ class Pipeline():
         clf = GridSearchCV(model, parameters, scoring = scorer, cv=5)
         clf.fit(self.X_train, self.y_train)
         time_now = dt.now()
-        filepath_base = os.path.join(pathlib.Path(__file__), "analysis/models_store")
+        filepath_base = "analysis/models_store"
 
         print(model)
         print(clf)
@@ -352,7 +353,7 @@ class Pipeline():
         y_pred_probs, y_test = self.joint_sort_descending(
             np.array(y_pred_probs), np.array(y_test))
         preds_at_k = self.generate_binary_at_k(y_pred_probs, k, k_type)
-        precision = precision_score(y_test, preds_at_k)
+        precision = precision_score(y_test, preds_at_k, average = 'micro')
 
         return precision
 
@@ -377,9 +378,34 @@ class Pipeline():
         y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
             np.array(y_pred_probs), np.array(y_test))
         preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
-        recall = recall_score(y_test_sorted, preds_at_k)
+        recall = recall_score(y_test_sorted, preds_at_k, average = 'micro')
 
         return recall
+
+    def accuracy_at_k(self, y_test, y_pred_probs, k, k_type):
+        """
+        Calculate recall of predictions at a threshold k.
+        k can be either a number threshold or a percentage of total threshold.
+
+        :param y_test: labels for testing data
+        :type y_test: array
+        :param y_pred_probs: predicted probabilities of class = 1 for testing data
+        :type y_pred_probs: array
+        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
+        :type k: int
+        :param k_type:Type of threshold K is - either absolute number or percentage. 
+                      Can take values "percent" or "count"
+        :type k_type: str
+        :return: recall of model at k%
+        :rtype: float
+        """
+
+        y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
+            np.array(y_pred_probs), np.array(y_test))
+        preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
+        accuracy = accuracy_score(y_test_sorted, preds_at_k)
+
+        return accuracy
 
     def f1_at_k(self, y_test, y_pred_probs, k, k_type):
         """
