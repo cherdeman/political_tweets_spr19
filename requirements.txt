@@ -5,3 +5,4 @@ twython==3.7.0
 sklearn==0.0
 pandas==0.24.2
 torchtext==0.3.1
+skorch=0.5.0
