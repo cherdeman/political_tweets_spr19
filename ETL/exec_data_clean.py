@@ -3,6 +3,7 @@ from ETL.data_clean import DataClean
 import argparse
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer
+from ast import literal_eval
 
 select_hash_dem = ["#bluewave2018", "#bluewave18", "#bluewave", "#democrats", "#resist", "#resistance", "#voteblue", 
 "#Votethemout", "#WinBlue", "#YesWeCan", "#FlipItBlue"]
@@ -31,7 +32,9 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
         3: 'user_id', 4: 'retweet_count', 5: 'favorite_count'}, inplace=True)    
     
     data['tweet_text_clean'] = data['tweet_text_raw'].apply(lambda x: dc.pre_process(x, strip_handles, rem_hashtags))
-    data = data[len(data['tweet_text_clean']) > 0]
+    data['len'] = data['tweet_text_clean'].apply(lambda x: len(x))
+    data = data[data['len'] > 0]
+    data.loc[data.label == 4, 'label'] = 1
     data['bigrams'] = data['tweet_text_clean'].apply(lambda x: dc.bigram(x, rem_hashtags))
     if "twitter140" in table:
         data['political'] = True
@@ -47,8 +50,6 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
     else:
         data_political['leadership'] = 0
 
-    # create one hot encoded columns for topics
-
     data_political['topics'] = data_political['bigrams'].apply(dc.topics)
     topic_list = list(set([st for row in data_political['topics'] for st in row]))
     topic_list.sort()
@@ -57,15 +58,15 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
                         columns=mlb.classes_,
                         index=data_political.index))
 
-    data_political.drop(['bigrams', 'political'], axis=1, inplace = True)
+    data_political.drop(['bigrams', 'political', 'len'], axis=1, inplace = True)
     file_path = "data/{}_clean.csv".format(table)
     data_political.to_csv(file_path, index = False)
-
-    #to_table_name = "staging.{}".format(table.split('.')[1])
+    
     to_table_name = "staging.{}".format(to_table)
     drop_table = "DROP TABLE if exists {}".format(to_table_name)
     
     if "twitter140" in table:
+        print("here")
         create_table = '''CREATE TABLE {} (label smallint, tweet_id varchar(20), tweet_date date, flag varchar(20), user_name varchar(30), tweet_text_raw text, tweet_text_clean text, leadership boolean, '''.format(to_table_name)
         for topic in topic_list:
             create_table += "{} boolean, ".format(topic)
