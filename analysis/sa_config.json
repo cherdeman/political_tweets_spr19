@@ -9,11 +9,13 @@
     "run_type": "build",
     "grid": {"LR": {
                     "type": "LogisticRegression()",
-                    "grid": {"penalty" : ["l1", "l2"], "C": [0.001]}
-            }},
+                    "grid": {"penalty" : ["l1", "l2"], "C": [0.001]}},
+            "NB": {"type": "GaussianNB()",
+                    "grid": {}}
+            },
     "model_obj_path": "<path to model if relevant>",
     "scoring": "accuracy",
-    "score_k_val": 100,
+    "score_k_val": 50,
     "score_k_type": "percent"
 
 }
