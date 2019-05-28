@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 # import NB and LR classifiers
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 import numpy as np
 import pandas as pd
 import os
@@ -149,6 +149,10 @@ def run(config_file):
         print(y_train_int.shape)
         print("splitting into val set...")
         X_train, X_val, y_train, y_val = train_test_split(X_train_int, y_train_int, test_size = val_frac, random_state = 1234, stratify = y_train_int)
+        X_train = X_train.todense()
+        X_val = X_val.todense()
+        X_test = X_test.todense()
+
         print(X_train.shape)
         print(X_val.shape)
         print(X_test.shape)    
@@ -185,18 +189,15 @@ def run(config_file):
     for key in grid.keys():
         print("Now training model family {} ".format(key))
         try:
-            pipeline = Pipeline(pipeline_mode = run_type, grid_model_id_key= key, X_train = X_train.todense(), 
-            y_train = y_train, clf_grid = grid, threshold = score_k_val, threshold_type = score_k_type,
-            model_obj_path = model_obj_path, model_obj_pref=iteration_name)
-
+            pipeline = Pipeline(pipeline_mode = run_type, grid_model_id_key= key, X_train = X_train, 
+            y_train = y_train, clf_grid = grid, model_obj_path = model_obj_path, model_obj_pref=iteration_name, scoring = "accuracy")
             y_val_prob = pipeline.gen_pred_probs(X_val)
             y_val_pred_class = pipeline.gen_preds(X_val)
-            recall = pipeline.recall_at_k(y_val, y_val_prob, score_k_val, score_k_type)
-            precision = pipeline.precision_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
-            accuracy = pipeline.accuracy_at_k(y_val, y_val_prob, score_k_val, score_k_type) 
-            accuracy_100 = accuracy_score(y_val, y_val_pred_class)
-            y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
-            binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
+            recall =recall_score(y_val, y_val_pred_class)
+            precision = precision_score(y_val, y_val_pred_class) 
+            accuracy = accuracy_score(y_val, y_val_pred_class)
+            #y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
+            #binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
             #tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
             
             #print("TN: {}".format(tn))
@@ -208,14 +209,12 @@ def run(config_file):
             #logging.info("FN: {}".format(fn))
             #logging.info("FP: {}".format(fp))
         
-            print("Test precision at {}: {}".format(score_k_val, precision))
-            print("Test recall at {}: {}".format(score_k_val, recall))
-            print("Test accuracy at {}: {}".format(score_k_val, accuracy))
-            print("Full val accuracy: {}".format(accuracy_100))
-            logging.info("Test precision at {}: {}".format(score_k_val, precision))
-            logging.info("Test recall at {}: {}".format(score_k_val, recall))
-            logging.info("Test accuracy at {}: {}".format(score_k_val, accuracy))
-            logging.info("full val accuracy: {}".format(accuracy_100))
+            print("Validation precision at {}: {}".format(score_k_val, precision))
+            print("Validation recall at {}: {}".format(score_k_val, recall))
+            print("Validation accuracy at {}: {}".format(score_k_val, accuracy))
+            logging.info("Validation precision at {}: {}".format(score_k_val, precision))
+            logging.info("Validation recall at {}: {}".format(score_k_val, recall))
+            logging.info("Validation accuracy at {}: {}".format(score_k_val, accuracy))
             
 
         except Exception as e:
