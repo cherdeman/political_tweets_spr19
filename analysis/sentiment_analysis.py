@@ -1,14 +1,28 @@
-logger = logging.getLogger('vzlog')
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
-logger.setLevel(logging.INFO)
+import pandas as pd
+import numpy as np
+import sklearn
+from sklearn.metrics import *
+from sklearn.utils.class_weight import compute_sample_weight 
+from sklearn.model_selection import GridSearchCV
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+import pickle
+from datetime import datetime as dt
+import logging
+import sys
+import matplotlib
+matplotlib.use('PS')
+from matplotlib import pyplot as plt
+import pathlib, os
+import joblib
+
 
 class Pipeline():
 
     def __init__(self, pipeline_mode, grid_model_id_key = None, 
                  X_train = None, y_train = None,
-                 clf_grid = None, model_obj_pref = "", scoring = "recall", 
-                 threshold = 2000, threshold_type = "count", model_obj_path = ""):
+                 clf_grid = None, model_obj_pref = "", scoring = "accuracy", 
+                 model_obj_path = ""):
         
         """
         The pipeline class is used for the following three functions:
@@ -60,15 +74,8 @@ class Pipeline():
         self.clf_grid = clf_grid 
         self.model_obj_pref = model_obj_pref 
         self.scoring = scoring
-        if threshold_type == "count":
-            self.threshold = threshold
-        else:
-            self.threshold = int(len(y_train) * (threshold / 100.0))
-      
-
         if pipeline_mode.lower() == "build":
-            scorer = self._make_score_fxn()
-            grid_obj = self._train_grid(scorer = scorer, key = grid_model_id_key)
+            grid_obj = self._train_grid(key = grid_model_id_key)
             self._estimator = grid_obj.best_estimator_
         elif pipeline_mode.lower() == "load":
             self._estimator = self._load_model_obj(model_obj_path = model_obj_path)
@@ -77,66 +84,7 @@ class Pipeline():
     def estimator(self):
         return self._estimator
 
-    def _make_score_fxn(self):
-        """
-        Private wrapper function to either create a precision or recall scorer
-        function to be used in the model training process
-
-        :return: sklearn scorer object that returns a scalar score; greater is better
-        :rtype: scorer object
-        """
-
-        if self.scoring == "precision":
-
-            def precision_at_k(y_test, y_pred_probs):
-                """Calculate precision of predictions at a threshold k.
-                
-                :param y_test: labels for testing data
-                :type y_test: array
-                :param y_pred_probs: predicted probabilities of class = 1 for testing data
-                :type y_pred_probs: array
-                :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-                :type k: int
-                :return: precision of model at k%
-                :rtype: float
-                """
-                
-                idx = np.argsort(np.array(y_pred_probs), kind='mergesort')[::-1]
-                y_pred_probs_sorted = np.array(y_pred_probs)[idx]
-                y_test_sorted = np.array(y_test)[idx]
-                preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
-                precision = precision_score(y_test_sorted, preds_at_k)
-                
-                return precision
-
-            return make_scorer(precision_at_k)
-
-        else:
-
-            def recall_at_k(y_test, y_pred_probs):
-                """Calculate recall of predictions at a threshold k.
-                
-                :param y_test: labels for testing data
-                :type y_test: array
-                :param y_pred_probs: predicted probabilities of class = 1 for testing data
-                :type y_pred_probs: array
-                :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-                :type k: int
-                :return: recall of model at k%
-                :rtype: float
-                """
-
-                idx = np.argsort(np.array(y_pred_probs), kind='mergesort')[::-1]
-                y_pred_probs_sorted = np.array(y_pred_probs)[idx]
-                y_test_sorted = np.array(y_test)[idx]
-                preds_at_k = [1 if x < self.threshold else 0 for x in range(len(y_pred_probs_sorted))]
-                recall = recall_score(y_test_sorted, preds_at_k)
-
-                return recall
-
-            return make_scorer(recall_at_k)
-
-    def _train_grid(self, scorer, key):       
+    def _train_grid(self, key):       
         """
         :param scorer: Sklearn scorer object that returns a scalar precision or recall 
                     score; greater is better
@@ -148,10 +96,10 @@ class Pipeline():
         """
         model = eval(self.clf_grid[key]["type"])
         parameters = self.clf_grid[key]["grid"]
-        clf = GridSearchCV(model, parameters, scoring = scorer, cv=5)
+        clf = GridSearchCV(model, parameters, scoring = self.scoring, cv=5)
         clf.fit(self.X_train, self.y_train)
         time_now = dt.now()
-        filepath_base = os.path.join(pathlib.Path(__file__).parent, "models_store")
+        filepath_base = "analysis/models_store"
 
         print(model)
         print(clf)
@@ -221,8 +169,20 @@ class Pipeline():
         :return: array of predicted probabilities of label = 1
         :rtype: array
         """
-        # [:, 1] returns probability class = 1
+        # [:, 1] returns probability class = 4
         return(self.estimator.predict_proba(Xtest)[:, 1])
+
+    def gen_preds(self, Xtest):
+        """
+        Generates predicted probabilities of class membership
+        
+        :param Xtest: testing features
+        :type Xtest: pandas dataframe
+        :return: array of predicted probabilities of label = 1
+        :rtype: array
+        """
+        # [:, 1] returns probability class = 4
+        return self.estimator.predict(Xtest)
 
     def _get_sample_weights(self, if_balance_weights, y_train):
         """
@@ -278,12 +238,15 @@ class Pipeline():
         :rtype: array
         """
 
+
         if k_type.lower() == "percent":
             cutoff_index = int(len(y_pred_probs) * (k / 100.0))
         elif k_type.lower() == "count":
             cutoff_index = k
+        
+        # positive sentiment = 4
         test_predictions_binary = [
-            1 if x < cutoff_index else 0 for x in range(len(y_pred_probs))]
+            4 if x < cutoff_index else 0 for x in range(len(y_pred_probs))]
 
         return test_predictions_binary
 
@@ -308,7 +271,7 @@ class Pipeline():
         y_pred_probs, y_test = self.joint_sort_descending(
             np.array(y_pred_probs), np.array(y_test))
         preds_at_k = self.generate_binary_at_k(y_pred_probs, k, k_type)
-        precision = precision_score(y_test, preds_at_k)
+        precision = precision_score(y_test, preds_at_k, average = 'micro')
 
         return precision
 
@@ -333,9 +296,57 @@ class Pipeline():
         y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
             np.array(y_pred_probs), np.array(y_test))
         preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
-        recall = recall_score(y_test_sorted, preds_at_k)
+        recall = recall_score(y_test_sorted, preds_at_k, average = 'micro')
 
         return recall
+
+    def accuracy_at_k(self, y_test, y_pred_probs, k, k_type):
+        """
+        Calculate recall of predictions at a threshold k.
+        k can be either a number threshold or a percentage of total threshold.
+
+        :param y_test: labels for testing data
+        :type y_test: array
+        :param y_pred_probs: predicted probabilities of class = 1 for testing data
+        :type y_pred_probs: array
+        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
+        :type k: int
+        :param k_type:Type of threshold K is - either absolute number or percentage. 
+                      Can take values "percent" or "count"
+        :type k_type: str
+        :return: recall of model at k%
+        :rtype: float
+        """
+
+        y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
+            np.array(y_pred_probs), np.array(y_test))
+        preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
+        accuracy = accuracy_score(y_test_sorted, preds_at_k)
+
+        return accuracy
+
+    def accuracy(self, y_test, X_test):
+        """
+        Calculate recall of predictions at a threshold k.
+        k can be either a number threshold or a percentage of total threshold.
+
+        :param y_test: labels for testing data
+        :type y_test: array
+        :param y_pred_probs: predicted probabilities of class = 1 for testing data
+        :type y_pred_probs: array
+        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
+        :type k: int
+        :param k_type:Type of threshold K is - either absolute number or percentage. 
+                      Can take values "percent" or "count"
+        :type k_type: str
+        :return: recall of model at k%
+        :rtype: float
+        """
+
+        pred_class = clf.predict(X[:2, :])
+        accuracy = accuracy_score(y_test_sorted, preds_at_k)
+
+        return accuracy
 
     def f1_at_k(self, y_test, y_pred_probs, k, k_type):
         """
