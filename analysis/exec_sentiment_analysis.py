@@ -115,6 +115,8 @@ def run(config_file):
         data.loc[data.label == 4, 'label'] = 1
         data['label'] = data['label'].astype(int)
         print(data.label.unique())
+        data.to_csv('analysis/models_store/sample_{}_{}.csv'.format(time_now, iteration_name))
+
         X, y = (data.loc[:, data.columns != label_col], data[label_col])
         log_msg = "STEP PASSED: SUCCESSFULLY SPLIT X AND Y COLS" 
         print(log_msg)
@@ -196,6 +198,8 @@ def run(config_file):
             recall =recall_score(y_val, y_val_pred_class)
             precision = precision_score(y_val, y_val_pred_class) 
             accuracy = accuracy_score(y_val, y_val_pred_class)
+
+
             #y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
             #binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
             #tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
@@ -209,12 +213,23 @@ def run(config_file):
             #logging.info("FN: {}".format(fn))
             #logging.info("FP: {}".format(fp))
         
-            print("Validation precision at {}: {}".format(score_k_val, precision))
-            print("Validation recall at {}: {}".format(score_k_val, recall))
-            print("Validation accuracy at {}: {}".format(score_k_val, accuracy))
-            logging.info("Validation precision at {}: {}".format(score_k_val, precision))
-            logging.info("Validation recall at {}: {}".format(score_k_val, recall))
-            logging.info("Validation accuracy at {}: {}".format(score_k_val, accuracy))
+            print("Validation precision: {}".format(precision))
+            print("Validation recall: {}".format(recall))
+            print("Validation accuracy: {}".format(accuracy))
+            logging.info("Validation precision: {}".format(precision))
+            logging.info("Validation recall: {}".format(recall))
+            logging.info("Validation accuracy: {}".format(accuracy))
+
+            y_test_pred_class = pipeline.gen_preds(X_test)
+            recall_test =recall_score(y_test, y_val_pred_class)
+            precision_test = precision_score(y_test, y_val_pred_class) 
+            accuracy_test = accuracy_score(y_test, y_val_pred_class)
+            print("Test precision: {}".format(precision_test))
+            print("Test recall: {}".format(recall_test))
+            print("Test accuracy: {}".format(accuracy_test))
+            logging.info("Test precision: {}".format(precision_test))
+            logging.info("Test recall: {}".format(recall_test))
+            logging.info("Test accuracy: {}".format(accuracy_test))
             
 
         except Exception as e:

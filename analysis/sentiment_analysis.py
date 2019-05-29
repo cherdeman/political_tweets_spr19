@@ -15,13 +15,7 @@ matplotlib.use('PS')
 from matplotlib import pyplot as plt
 import pathlib, os
 import joblib
- 
 
-
-logger = logging.getLogger('model_log')
-sh = logging.StreamHandler(sys.stdout)
-logger.addHandler(sh)
-logger.setLevel(logging.INFO)
 
 class Pipeline():
 
