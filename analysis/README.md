@@ -1,4 +1,4 @@
-This repository contains the files used to complete all of the modeling for this project, which can be divided into three categories: 1) Baseline Models, 2) VADER, 3) LSTM.
+This repository contains the files used for generating the political topic bigrams (`topic_label.ipynb` which produces `final_topics.csv`) as well as the files to complete all of the modeling for this project, which can be divided into three categories: 1) Baseline Models, 2) VADER, 3) LSTM.
 
 ## Baseline Models ##
 
