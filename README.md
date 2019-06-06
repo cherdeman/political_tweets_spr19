@@ -60,6 +60,6 @@ Wrubel, Laura; Littman, Justin; Kerchner, Dan, 2019, "2018 U.S. Congressional El
 * Half of House 800k
 * Used tweepy to pull tweets for each id
 
-### TODOs
-add GloVe citation
-add sentiment 140 citation
+Jeffrey Pennington, Richard Socher, and Christopher D. Manning. 2014. [GloVe: Global Vectors for Word Representation](https://nlp.stanford.edu/projects/glove/). 
+
+[Sentiment 140](http://www.sentiment140.com/)
