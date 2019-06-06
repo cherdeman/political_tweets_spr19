@@ -72,24 +72,7 @@ class VADER_Analyzer:
             np.where((self.df['democrat']==False) & (self.df['leadership']==False), 'rep-base', ""))))
 
         self.plotting = pd.melt(self.df[self.df['group'] != ""], id_vars = ['democrat', 'leadership', 'group', 'tweet_id', 'tweet_date', 'tweet_text_raw', 'user_id'])
-        # results_to_plot = pd.melt(self.results, id_vars = ['democrat', 'leadership'])
-
-        # results_to_plot['group'] = np.where((results_to_plot['democrat']==True) & (results_to_plot['leadership']==True), 'dem-lead', 
-        #     np.where((results_to_plot['democrat']==True) & (results_to_plot['leadership']==False), 'dem-base',
-        #     np.where((results_to_plot['democrat']==False) & (results_to_plot['leadership']==True), 'rep-lead', 'rep-base')))
-
-        # conditions = [
-        #                (self.results['democrat'] == True) & (self.results['leadership'] == True),
-        #                (self.results['democrat'] == True) & (self.results['leadership'] == False),
-        #                (self.results['democrat'] == False) & (self.results['leadership'] == True),
-        #                (self.results['democrat'] == False) & (self.results['leadership'] == False)
-        #               ]
-        
-
-        # results_to_plot['group'] = np.select(conditions, self.choices)
-
-        #self.plotting = results_to_plot
-
+  
     def plot(self, neg_pos_only = True):
         if neg_pos_only:
             data = self.plotting[self.plotting['variable'].isin(['negative', 'positive'])]

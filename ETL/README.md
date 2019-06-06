@@ -44,6 +44,9 @@ python3 -m ETL.exec_data_clean raw.senate 100000 --strip_handles
 python3 -m ETL.exec_data_clean raw.house 100000 --strip_handles
 python3 -m ETL.exec_data_clean raw.train_twitter140 100000 --strip_handles
 ```
+
+Note that the file `analysis/final_topics.csv` containing the top bigrams and their assigned political topics must exist for this to run successfully.
+
 ## 5. Create Master Table
 
 Finally, create the master analysis table by running `python -m ETL.make_master` from the root of the repository.
