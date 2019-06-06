@@ -41,6 +41,15 @@ We used the Twitter API to gather sampled tweets from the 2018 election. In orde
  "access_token_secret":"<your-twitter-access-token-secret>"}
 ```
 
+### Repository Structure
+This repository is structured as followed:
+- `ETL/`: contains files for gathering data from Twitter API, loading data into database, identifying political bigrams and topics, and cleaning data for analysis.
+- `analysis/`: contains files for modeling including baseline models, LSTM, and VADER. 
+- `data/`: contains raw data files used for this project.
+- `utils/`: contains a database connection utility and a vader utility.
+
+### Code Adapted from Previous Work
+Three files in this repository containcode that wasn't written new for this project: `analysis/sentiment_analysis.py`, `analysis/exec_sentiment_analysis.py`, and `utils/db_client.py`. The `utils/db_client.py` is largely unchanged for this assignment, though some small changes were made for this project. The two analysis files were changed far more singificantly for this assignment. The README in the analysis folder discusses in detail what code in these two files was repurposed for this assignment versus written new.
 
 # Dataset Citations
 Wrubel, Laura; Littman, Justin; Kerchner, Dan, 2019, "2018 U.S. Congressional Election Tweet Ids", https://doi.org/10.7910/DVN/AEZPLU, Harvard Dataverse, V1, UNF:6:gxmogmaacqF8Mu3nvM793w== [fileUNF]
