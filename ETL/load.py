@@ -2,11 +2,12 @@
 from utils.db_client import DBClient
 
 tables = {"senate":["tweets","senate_tweets.csv"],
-          "house": ["tweets","house_tweets.csv"],
-          "democrat":["tweets","dem_tweets_combo.csv"],
-          "republican":["tweets","rep_tweets_combo.csv"],
-          "house_accounts": ["lookups","house-accounts.csv"],
-          "senate_accounts": ["lookups","senate-accounts.csv"]}
+         "house": ["tweets","house_tweets.csv"],
+         "democrat":["tweets","dem_tweets.csv"],
+         "republican":["tweets","rep_tweets.csv"],
+         "house_accounts": ["lookups","house-accounts.csv"],
+         "senate_accounts": ["lookups","senate-accounts.csv"],
+         "train_twitter140": ["training", "train_twitter140.csv"]}
 
 ####### QUERIES ######
 
@@ -15,7 +16,6 @@ create_schema = "create schema if not exists raw"
 drop = "drop table if exists {};"
 
 create_table = "create table {} ({});"
-
 tweet_columns = """
                   tweet_id varchar(20) NOT NULL,
                   tweet_date date,
@@ -32,8 +32,18 @@ accounts_columns = """
                     party_affiliation varchar(1)
                    """
 
+train_columns = """
+                  label smallint NOT NULL,
+                  id varchar(20),
+                  date date,
+                  flag varchar(20),
+                  user_name varchar(30),
+                  text text
+                """
+
 tweet_col_names = "tweet_id, tweet_date, tweet_text, user_id, retweet_count, favorite_count"
 account_col_names = "token, user_id, link, party_affiliation"
+train_col_names = "label, id, date, flag, user_name, text"
 
 copy = """
        copy {}({}) 
@@ -46,9 +56,12 @@ def prepare_statements(file_directory, full_table_name):
     if file_directory == "tweets":
         create_statement = create_table.format(full_table_name, tweet_columns)
         copy_statement = copy.format(full_table_name, tweet_col_names)
-    else:
+    elif file_directory == "lookups":
         create_statement = create_table.format(full_table_name, accounts_columns)
         copy_statement = copy.format(full_table_name, account_col_names)
+    else:
+        create_statement = create_table.format(full_table_name, train_columns)
+        copy_statement = copy.format(full_table_name, train_col_names)
 
     drop_statement = drop.format(full_table_name)
 
@@ -76,6 +89,7 @@ def load(db):
     db.exit()
 
 if __name__ == "__main__":
+  print(tables)
   db = DBClient()
   load(db)
 

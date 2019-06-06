@@ -50,25 +50,12 @@ def run(config_file):
     reqd_cols = params['reqd_cols']
 
     label_col = params['label_col']# enter name of the label column
-    
-    # assuming reqd_rows_fraction = 1
-    reqd_rows_fraction = float(params['reqd_rows_fraction']) # enter fraction of rows from feature table needed, as a decimal
-    if reqd_rows_fraction < 1:
-        #TO_DO
-        # edit if want to change
-        if_nowrite_sample_tbl = True
-    else:
-        if_nowrite_sample_tbl = True
 
     # Logging data load parameters
     log_dl_msg = ("The feature table used for this run is {}\n" +
                   "The required set of columns used for this run is: \n{}\n" +
-                  "The column used as the label (predicted) column for this run is {}\n" +
-                  "The percentage of rows used is {}\n" +
-                  "Was the sample snapshot table created in this run {}").format(
-                      feature_table_name, reqd_cols, label_col, 
-                      reqd_rows_fraction, not if_nowrite_sample_tbl
-                  )
+                  "The column used as the label (predicted) column for this run is {}\n").format(
+                      feature_table_name, reqd_cols, label_col)
     logging.info(log_dl_msg)
 
     # Data Prep Params
@@ -174,18 +161,13 @@ def run(config_file):
     run_type = params['run_type']
     model_obj_path = params['model_obj_path']
     scoring = params['scoring']
-    score_k_val = params['score_k_val']
-    score_k_type = "percent"
     grid = params['grid']
 
     # Logging the modelling parameters
     log_mdl_msg = ("The path of the model object used for this run is found at \n{}\n" +
                    "The scoring function used for this run is: {}\n" +
-                   "The type of population threshold used is: {}\n" +
-                   "The population threshold at which the score is calculated is {}\n" +
                    "The parameter grid used for the search is: \n{}\n").format(
-                       model_obj_path, scoring, score_k_type, score_k_val, grid
-                       )
+                       model_obj_path, scoring, grid)
     logging.info(log_mdl_msg)
 
     for key in grid.keys():
@@ -193,26 +175,11 @@ def run(config_file):
         try:
             pipeline = Pipeline(pipeline_mode = run_type, grid_model_id_key= key, X_train = X_train, 
             y_train = y_train, clf_grid = grid, model_obj_path = model_obj_path, model_obj_pref=iteration_name, scoring = "accuracy")
-            y_val_prob = pipeline.gen_pred_probs(X_val)
             y_val_pred_class = pipeline.gen_preds(X_val)
             recall =recall_score(y_val, y_val_pred_class)
             precision = precision_score(y_val, y_val_pred_class) 
             accuracy = accuracy_score(y_val, y_val_pred_class)
 
-
-            #y_pred_prob_ordered, y_test_ordered = pipeline.joint_sort_descending(np.array(y_val_prob), np.array(y_val))
-            #binary_preds = pipeline.generate_binary_at_k(y_pred_prob_ordered, score_k_val, score_k_type)
-            #tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_test_ordered, binary_preds).ravel()
-            
-            #print("TN: {}".format(tn))
-            #print("TP: {}".format(tp))
-            #print("FN: {}".format(fn))
-            #print("FP: {}".format(fp))
-            #logging.info("TN: {}".format(tn))
-            #logging.info("TP: {}".format(tp))
-            #logging.info("FN: {}".format(fn))
-            #logging.info("FP: {}".format(fp))
-        
             print("Validation precision: {}".format(precision))
             print("Validation recall: {}".format(recall))
             print("Validation accuracy: {}".format(accuracy))
@@ -221,9 +188,10 @@ def run(config_file):
             logging.info("Validation accuracy: {}".format(accuracy))
 
             y_test_pred_class = pipeline.gen_preds(X_test)
-            recall_test =recall_score(y_test, y_val_pred_class)
-            precision_test = precision_score(y_test, y_val_pred_class) 
-            accuracy_test = accuracy_score(y_test, y_val_pred_class)
+            recall_test =recall_score(y_test, y_test_pred_class)
+            precision_test = precision_score(y_test, y_test_pred_class) 
+            accuracy_test = accuracy_score(y_test, y_test_pred_class)
+
             print("Test precision: {}".format(precision_test))
             print("Test recall: {}".format(recall_test))
             print("Test accuracy: {}".format(accuracy_test))

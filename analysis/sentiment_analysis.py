@@ -25,22 +25,15 @@ class Pipeline():
                  model_obj_path = ""):
         
         """
-        The pipeline class is used for the following three functions:
-            1. Find the optimal classifier to run given a hyperparameter 
-               grid (build mode)
-            2. Refresh a pre-determined classifier with new data (refresh mode)
-            3. Load a pre-trained classifier and predict on new data (load mode)
-
+        The pipeline class is used to find the optimal classifier to run given 
+        a hyperparameter grid (build mode)
+        
         The pipeline class contains methods to calculate accuracy, recall, 
         precision, and f1 evaluation metrics at a user-specified threshold.
 
         Running the pipeline in build mode also a generates a joblib dump of 
         the model.
         
-        :param pipeline_mode: The type of pipeline object to be initialised. Can
-                              take options as "build", "refresh" and "load", 
-                              Class description explains these different modes.
-        :type pipeline_mode: string
         :param grid_model_id_key: The key corresponding to the model class to 
                                   be used from the input dictionary, defaults to
                                   None
@@ -65,9 +58,6 @@ class Pipeline():
                         "precision" or "recall". Calculates selected metric at
                         threshold defined by parameter. Defaults to "recall"
         :type scoring: string, optional
-        :param threshold: Threshold number of prediction at which scoring metric
-                          needs to be calculated
-        :type threshold: int, optional
         """
         self.X_train = X_train
         self.y_train = y_train
@@ -117,37 +107,6 @@ class Pipeline():
         
         return clf
 
-    def _model_refresh(self, model_obj_path, X_train, y_train):
-        """
-        Private function to execute the "model refresh" pipeline. Activities
-        in this pipeline are:
-            1. Load a pre-built pipeline
-            2. Train the pipeline
-        
-        :param model_obj_path: Path of the pickled sklearn pipeline object
-                               generated in a previous run
-        :type model_obj_path: string
-        :param X_train: Training regressor dataset to train classifier, must 
-                        follow format required by scikit models
-        :type X_train: pandas df/numpy array
-        :param y_train: Training dependent dataset to train classifier, must 
-                        follow format required by scikit models
-        :type y_train: pandas series/numpy array
-        :return: The retrained sklearn pipeline object
-        :rtype: sklearn.pipeline
-        """
-
-        classifier_obj = self._load_model_obj(model_obj_path)
-        classifier_obj = classifier_obj.fit(X_train, y_train)
-
-        time_now = dt.now()      
-        filepath_base = os.path.join(pathlib.Path(__file__).parent, "models_store")  
-        model_obj_file_name = '{}_{}.joblib'.format(self.model_obj_pref, time_now)
-        filepath = os.path.join(filepath_base, model_obj_file_name)
-        joblib.dump(classifier_obj, filepath)
-
-        return classifier_obj 
-
     def _load_model_obj(self, model_obj_path):
         """
         Private function to load a model joblib dump. 
@@ -183,196 +142,6 @@ class Pipeline():
         """
         # [:, 1] returns probability class = 4
         return self.estimator.predict(Xtest)
-
-    def _get_sample_weights(self, if_balance_weights, y_train):
-        """
-        Private function to calculate sample weights to balance classes
-        in the training dataset.
-        
-        :param if_balance_weights: Flag which if true, calculates sample 
-                                   weights to balance out imbalanced classes
-        :type if_balance_weights: bool
-        :param y_train: Training dependent dataset to train classifier, must 
-                        follow format required by scikit models
-        :type y_train: pandas series/numpy array
-        :return: The sample weights to be used by the sklearn fit function. 
-                 Can be an array of weights or None
-        :rtype: numpy array
-        """
-
-        sample_weights = None
-        if if_balance_weights:
-            sample_weights = compute_sample_weight("balanced", y_train)
-    
-        return sample_weights
-
-    def joint_sort_descending(self, l1, l2):
-        """
-        Jointly sort two numpy arrays, util for methods below
-        
-        :param l1: list one
-        :type l1: numpy array
-        :param l2: list two
-        :type l2: numpy array
-        :return: sorted lists
-        :rtype: numpy arrays
-        """
-
-        idx = np.argsort(l1, kind='mergesort')[::-1]
-        return l1[idx], l2[idx]
-
-    ##### Model Evaluation Functions #####
-    def generate_binary_at_k(self, y_pred_probs, k, k_type):
-        """
-        Turn probabilistic outcomes to binary variable based on threshold k. 
-        k can be either a number threshold or a percentage of total threshold
-        
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: array of binary classifications
-        :rtype: array
-        """
-
-
-        if k_type.lower() == "percent":
-            cutoff_index = int(len(y_pred_probs) * (k / 100.0))
-        elif k_type.lower() == "count":
-            cutoff_index = k
-        
-        # positive sentiment = 4
-        test_predictions_binary = [
-            4 if x < cutoff_index else 0 for x in range(len(y_pred_probs))]
-
-        return test_predictions_binary
-
-    def precision_at_k(self, y_test, y_pred_probs, k, k_type):
-        """
-        Calculate precision of predictions at a threshold k.
-        k can be either a number threshold or a percentage of total threshold
-        
-        :param y_test: labels for testing data
-        :type y_test: array
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: precision of model at k%
-        :rtype: float
-        """
-
-        y_pred_probs, y_test = self.joint_sort_descending(
-            np.array(y_pred_probs), np.array(y_test))
-        preds_at_k = self.generate_binary_at_k(y_pred_probs, k, k_type)
-        precision = precision_score(y_test, preds_at_k, average = 'micro')
-
-        return precision
-
-    def recall_at_k(self, y_test, y_pred_probs, k, k_type):
-        """
-        Calculate recall of predictions at a threshold k.
-        k can be either a number threshold or a percentage of total threshold.
-
-        :param y_test: labels for testing data
-        :type y_test: array
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: recall of model at k%
-        :rtype: float
-        """
-
-        y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
-            np.array(y_pred_probs), np.array(y_test))
-        preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
-        recall = recall_score(y_test_sorted, preds_at_k, average = 'micro')
-
-        return recall
-
-    def accuracy_at_k(self, y_test, y_pred_probs, k, k_type):
-        """
-        Calculate recall of predictions at a threshold k.
-        k can be either a number threshold or a percentage of total threshold.
-
-        :param y_test: labels for testing data
-        :type y_test: array
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: recall of model at k%
-        :rtype: float
-        """
-
-        y_pred_probs_sorted, y_test_sorted = self.joint_sort_descending(
-            np.array(y_pred_probs), np.array(y_test))
-        preds_at_k = self.generate_binary_at_k(y_pred_probs_sorted, k, k_type)
-        accuracy = accuracy_score(y_test_sorted, preds_at_k)
-
-        return accuracy
-
-    def accuracy(self, y_test, X_test):
-        """
-        Calculate recall of predictions at a threshold k.
-        k can be either a number threshold or a percentage of total threshold.
-
-        :param y_test: labels for testing data
-        :type y_test: array
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: recall of model at k%
-        :rtype: float
-        """
-
-        pred_class = clf.predict(X[:2, :])
-        accuracy = accuracy_score(y_test_sorted, preds_at_k)
-
-        return accuracy
-
-    def f1_at_k(self, y_test, y_pred_probs, k, k_type):
-        """
-        Calculate F1 score of predictions at a threshold k.
-        k can be either a number threshold or a percentage of total threshold
-
-        :param y_test: labels for testing data
-        :type y_test: array
-        :param y_pred_probs: predicted probabilities of class = 1 for testing data
-        :type y_pred_probs: array
-        :param k: percentage cutoff to calcualte binary (eg. top 20% proabilities = 1)
-        :type k: int
-        :param k_type:Type of threshold K is - either absolute number or percentage. 
-                      Can take values "percent" or "count"
-        :type k_type: str
-        :return: f1 score of modek at k%
-        :rtype: float
-        """
-
-        y_pred_probs, y_test = self.joint_sort_descending(
-            np.array(y_pred_probs), np.array(y_test))
-        preds_at_k = self.generate_binary_at_k(y_pred_probs, k, k_type)
-
-        f1 = f1_score(y_test, preds_at_k)
-
-        return f1
 
     ##### Writeout/Visualization Functions #####
     def plot_precision_recall_n(self, y_test, y_pred_prob, model_name, output_type):
