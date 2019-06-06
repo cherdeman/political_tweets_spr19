@@ -58,7 +58,6 @@ Wrubel, Laura; Littman, Justin; Kerchner, Dan, 2019, "2018 U.S. Congressional El
 * Sampled 50000 from each rep file (11)
 * All from Senate file 200k
 * Half of House 800k
-* Used tweepy to pull tweets for each id
 
 Jeffrey Pennington, Richard Socher, and Christopher D. Manning. 2014. [GloVe: Global Vectors for Word Representation](https://nlp.stanford.edu/projects/glove/). 
 
