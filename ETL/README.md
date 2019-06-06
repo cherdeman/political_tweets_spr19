@@ -26,6 +26,24 @@ To load the raw tweets into the database, simply run `python -m ETL.load` from t
 
 ## 4. Clean and Categorize Tweets by Topic
 
-[ALENA TO DO: Cleaning steps]
+To clean the raw data and create the staging tables, run the `exec_data_clean.py` script, which uses the DataClean class and its associated methods from `data_clean.py`. The `exec_data_clean.py` script has the following command line arguments:
+- `table`: the name of the raw database table to clean (should be raw.democrat, raw.republican, raw.senate, raw.house, or raw.train_twitter140)
+- `chunk_size`: the number of rows in each chunk in the batch read from the database
+- `--strip_handles` (optional): if this flag is present, handles will be removed during cleaning
+- `--rem_hashtags` (optional): this flag should be followed by one of the two following values:
+         - "all" if all hashtags should be removed
+         - "select" if only the hashtags used to select the tweets should be removed (only relevant for raw.democrat and raw.republican)
+- `--to_table` (optional): the name of the table to write the clean data, if this flag is not specified, the data will be written to staging.<name> where <name> comes from the raw table (eg. raw.democrat would be written to staging.democrat)
+
+To clean the data as we did for analysis, run the following commands:
+
+```
+python3 -m ETL.exec_data_clean raw.democrat 100000 --strip_handles
+python3 -m ETL.exec_data_clean raw.republican 100000 --strip_handles
+python3 -m ETL.exec_data_clean raw.senate 100000 --strip_handles
+python3 -m ETL.exec_data_clean raw.house 100000 --strip_handles
+python3 -m ETL.exec_data_clean raw.train_twitter140 100000 --strip_handles
+```
+## 5. Create Master Table
 
 Finally, create the master analysis table by running `python -m ETL.make_master` from the root of the repository.
