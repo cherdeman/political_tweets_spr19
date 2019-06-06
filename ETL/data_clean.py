@@ -20,7 +20,7 @@ class DataClean():
         """
         self.tweet_field = cleaned_tweet_field
         self.select_hash = select_hash
-        self.topic_dict = self.create_topic_dict('ETL/final_topics.csv')
+        self.topic_dict = self.create_topic_dict('analysis/final_topics.csv')
 
     def create_topic_dict(self,file_name):
         d = {}
