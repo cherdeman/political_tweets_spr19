@@ -10,7 +10,7 @@ import re
 import pandas as pd
 
 class DataClean():
-    def __init__(self, select_hash, cleaned_tweet_field = 'tweet_text_clean'):
+    def __init__(self, select_hash=None, cleaned_tweet_field = 'tweet_text_clean'):
         """[summary]
         
         :param table_name: [description]

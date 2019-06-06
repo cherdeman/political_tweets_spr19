@@ -20,3 +20,6 @@ sprml/
 *.icloud
 *.DS_Store
 *__pycache__/
+
+# google's word2vec model
+model/
