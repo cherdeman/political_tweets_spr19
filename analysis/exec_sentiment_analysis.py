@@ -179,7 +179,7 @@ def run(config_file):
             recall =recall_score(y_val, y_val_pred_class)
             precision = precision_score(y_val, y_val_pred_class) 
             accuracy = accuracy_score(y_val, y_val_pred_class)
-        
+
             print("Validation precision: {}".format(precision))
             print("Validation recall: {}".format(recall))
             print("Validation accuracy: {}".format(accuracy))
@@ -191,6 +191,7 @@ def run(config_file):
             recall_test =recall_score(y_test, y_test_pred_class)
             precision_test = precision_score(y_test, y_test_pred_class) 
             accuracy_test = accuracy_score(y_test, y_test_pred_class)
+
             print("Test precision: {}".format(precision_test))
             print("Test recall: {}".format(recall_test))
             print("Test accuracy: {}".format(accuracy_test))

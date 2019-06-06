@@ -9,7 +9,6 @@ tables = {"senate":["tweets","senate_tweets.csv"],
          "senate_accounts": ["lookups","senate-accounts.csv"],
          "train_twitter140": ["training", "train_twitter140.csv"]}
 
-
 ####### QUERIES ######
 
 create_schema = "create schema if not exists raw"

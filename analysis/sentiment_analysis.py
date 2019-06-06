@@ -128,7 +128,7 @@ class Pipeline():
         :return: array of predicted probabilities of label = 1
         :rtype: array
         """
-        # [:, 1] returns probability class = 1
+        # [:, 1] returns probability class = 4
         return(self.estimator.predict_proba(Xtest)[:, 1])
 
     def gen_preds(self, Xtest):
@@ -140,7 +140,7 @@ class Pipeline():
         :return: array of predicted probabilities of label = 1
         :rtype: array
         """
-        
+        # [:, 1] returns probability class = 4
         return self.estimator.predict(Xtest)
 
     ##### Writeout/Visualization Functions #####

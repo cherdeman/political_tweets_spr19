@@ -3,6 +3,9 @@ data/partisan_data
 data/GWdata
 data/tweets/house_attempts/
 data/tweets/house_tweets.csv
+data/tweets/dem_tweets_combo.csv
+data/tweets/rep_tweets_combo.csv
+data/tweets/senate_tweets.csv
 
 # Ignore secrets files located in configs directory
 configs/*
@@ -17,3 +20,6 @@ sprml/
 *.icloud
 *.DS_Store
 *__pycache__/
+
+# google's word2vec model
+model/
