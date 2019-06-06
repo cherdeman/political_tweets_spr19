@@ -22,9 +22,7 @@ Our convention was to name our output files in the following manner:
 If you choose a different convention, you will need to update the `tables` dictionary in `load.py` for step 3
 
 ## 3. Load Raw Tweets into Database
-To load the raw tweets into the database, simply run `python -m ETL.load` from the root of the repository. Note that this step also requires that The party affiliations for House and Senate twitter accounts are located in files `data/lookups/house-accounts.csv` and `data/lookups/senate-accounts.csv`, respectively.
-
-[ALENA TO DO: Where does thte sentiment 140 data need to live to run load.py]
+To load the raw tweets into the database, simply run `python -m ETL.load` from the root of the repository. Note that this step also requires that The party affiliations for House and Senate twitter accounts are located in files `data/lookups/house-accounts.csv` and `data/lookups/senate-accounts.csv`, respectively. The training sentiment140 data should be located in `data/training/train_twitter140.csv`.
 
 ## 4. Clean and Categorize Tweets by Topic
 
