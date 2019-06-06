@@ -19,7 +19,7 @@ import joblib
 
 class Pipeline():
 
-    def __init__(self, grid_model_id_key = None, 
+    def __init__(self, pipeline_mode, grid_model_id_key = None, 
                  X_train = None, y_train = None,
                  clf_grid = None, model_obj_pref = "", scoring = "accuracy", 
                  model_obj_path = ""):
@@ -64,8 +64,11 @@ class Pipeline():
         self.clf_grid = clf_grid 
         self.model_obj_pref = model_obj_pref 
         self.scoring = scoring
-        grid_obj = self._train_grid(key = grid_model_id_key)
-        self._estimator = grid_obj.best_estimator_
+        if pipeline_mode.lower() == "build":
+            grid_obj = self._train_grid(key = grid_model_id_key)
+            self._estimator = grid_obj.best_estimator_
+        elif pipeline_mode.lower() == "load":
+            self._estimator = self._load_model_obj(model_obj_path = model_obj_path)
 
     @property
     def estimator(self):

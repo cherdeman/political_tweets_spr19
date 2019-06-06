@@ -58,7 +58,7 @@ def run(table, chunk_size, strip_handles, rem_hashtags, to_table):
                         columns=mlb.classes_,
                         index=data_political.index))
 
-    data_political.drop(['bigrams', 'political', 'len'], axis=1, inplace = True)
+    data_political.drop(['bigrams', 'political', 'len'], inplace = True)
     file_path = "data/{}_clean.csv".format(table)
     data_political.to_csv(file_path, index = False)
     
